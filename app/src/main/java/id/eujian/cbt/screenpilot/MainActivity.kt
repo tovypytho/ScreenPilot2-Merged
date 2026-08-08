@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -153,6 +155,7 @@ class MainActivity : ComponentActivity() {
 
     private var captureWebView: WebView? = null
     private var internalDebugSessionStarted = false
+    private val internalCaptureProviderReady = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -181,11 +184,23 @@ class MainActivity : ComponentActivity() {
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         val wv = view ?: captureWebView ?: return
-                        // Defer provider registration until WebView has processed the
-                        // page-finished callback and a deterministic viewport exists.
-                        wv.post {
-                            if (!isFinishing && !isDestroyed && wv.width > 0 && wv.height > 0) {
-                                CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                        // This debug WebView is intentionally off-screen and never attached
+                        // to a ViewRoot. View.post { } can therefore remain queued forever.
+                        // Post through the main Looper instead so provider registration does
+                        // not depend on attachment. Re-assert the deterministic viewport after
+                        // page load before exposing the provider to the capture service.
+                        Handler(Looper.getMainLooper()).post {
+                            if (!isFinishing && !isDestroyed && captureWebView === wv) {
+                                wv.measure(
+                                    View.MeasureSpec.makeMeasureSpec(vpWidth, View.MeasureSpec.EXACTLY),
+                                    View.MeasureSpec.makeMeasureSpec(vpHeight, View.MeasureSpec.EXACTLY)
+                                )
+                                wv.layout(0, 0, vpWidth, vpHeight)
+
+                                if (wv.width > 0 && wv.height > 0) {
+                                    CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                                    internalCaptureProviderReady.value = true
+                                }
                             }
                         }
                     }
@@ -205,8 +220,12 @@ class MainActivity : ComponentActivity() {
                                 .align(Alignment.BottomEnd)
                                 .padding(16.dp)
                         ) {
-                            Button(onClick = {
-                                when {
+                            Button(
+                                enabled = internalCaptureProviderReady.value ||
+                                    internalDebugSessionStarted ||
+                                    ScreenCaptureService.isInternalCaptureActive.value,
+                                onClick = {
+                                    when {
                                     internalDebugSessionStarted || ScreenCaptureService.isInternalCaptureActive.value -> {
                                         Toast.makeText(
                                             this@MainActivity,
@@ -259,8 +278,15 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-                            }) {
-                                Text("Debug: Start Internal Capture", fontSize = 10.sp)
+                            ) {
+                                Text(
+                                    if (internalCaptureProviderReady.value) {
+                                        "Debug: Start Internal Capture"
+                                    } else {
+                                        "Debug: Loading Internal Test…"
+                                    },
+                                    fontSize = 10.sp
+                                )
                             }
                         }
                     }
@@ -283,6 +309,7 @@ class MainActivity : ComponentActivity() {
             internalDebugSessionStarted = false
         }
 
+        internalCaptureProviderReady.value = false
         CaptureProviderRegistry.clear()
         captureWebView?.stopLoading()
         captureWebView?.loadUrl("about:blank")
