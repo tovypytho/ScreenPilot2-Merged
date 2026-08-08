@@ -1,15 +1,16 @@
 package id.eujian.cbt.screenpilot.capture
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class FakeCaptureProviderTest {
 
     @Test
