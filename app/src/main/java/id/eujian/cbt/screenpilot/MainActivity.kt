@@ -278,6 +278,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
+                            }
                             ) {
                                 Text(
                                     if (internalCaptureProviderReady.value) {
