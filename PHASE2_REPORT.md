@@ -1,8 +1,13 @@
 # PHASE2_REPORT.md — Capture Abstraction
 
 **Date:** 2026-08-08
-**Phase:** Phase 2 — Capture Abstraction (in progress)
-**Commit:** `dc5c7b3` (initial) → `411c812` (lifecycle fix)
+**Phase:** Phase 2 — Capture Abstraction (CI GREEN, runtime smoke test pending)
+**Commit:** `dc5c7b3` (initial) → `411c812` (lifecycle fix) → `8e32b6a` (test runner fix)
+
+### CI Status
+- `compileDebugKotlin`: SUCCESS
+- `testDebugUnitTest`: SUCCESS (164 tests, 0 failures)
+- `assembleDebug`: SUCCESS
 
 ---
 
@@ -115,5 +120,6 @@ dc5c7b3 feat: CaptureProvider abstraction with WebView capture
 
 ## 6. Next Steps
 
-- [ ] Run CI to verify compile + tests
+- [x] Run CI to verify compile + tests (GREEN)
+- [ ] Runtime smoke: verify internal WebView capture works without MediaProjection (debug harness)
 - [ ] Only after CI green: start Phase 3 (Flutter test host)

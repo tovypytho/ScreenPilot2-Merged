@@ -3,7 +3,7 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 1 CI verified GREEN. Phase 2 (Capture Abstraction) in progress — CaptureProvider, WebViewCaptureProvider, registry, internal capture mode, and unit tests implemented.**
+**Phase 2 CI VERIFIED GREEN (compile + 164 tests + assembleDebug all pass). Runtime smoke test harness in progress.**
 
 ## Completed
 - Backup of pre-Phase-1 MergedProject created.

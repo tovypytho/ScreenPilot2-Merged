@@ -49,8 +49,10 @@
 - [x] Commit "feat: CaptureProvider abstraction with WebView capture" (commit dc5c7b3)
 - [x] Commit "fix: correct CaptureProvider lifecycle and internal capture wiring" (commit 411c812)
 - [x] Create PHASE2_REPORT.md
-- [ ] Run CI for Phase 2
-- [ ] Write `PHASE2_REPORT.md` (updated)
+- [x] Run CI for Phase 2 (GREEN: compile + 164 tests + assembleDebug)
+- [x] Write `PHASE2_REPORT.md` (updated)
+- [ ] Runtime smoke test: verify internal WebView capture without MediaProjection (debug harness)
+- [ ] Mark Phase-2 runtime checkpoint GREEN
 
 ## Phase 3 — Flutter Test Host
 Start only after Phase 2 is green.

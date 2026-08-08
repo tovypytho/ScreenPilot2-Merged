@@ -123,6 +123,7 @@ import id.eujian.cbt.screenpilot.service.ScreenCaptureService
 import id.eujian.cbt.screenpilot.service.ConnectionTester
 import id.eujian.cbt.screenpilot.ui.theme.MyApplicationTheme
 import android.util.Base64
+import id.eujian.cbt.screenpilot.BuildConfig
 import id.eujian.cbt.screenpilot.service.ApiException
 import id.eujian.cbt.screenpilot.service.ProviderGateway
 import id.eujian.cbt.screenpilot.service.AiProvider
@@ -156,35 +157,60 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val density = resources.displayMetrics.density
-        val vpWidth = (1080 * density).toInt()
-        val vpHeight = (1920 * density).toInt()
+        if (BuildConfig.DEBUG) {
+            val density = resources.displayMetrics.density
+            val vpWidth = (1080 * density).toInt()
+            val vpHeight = (1920 * density).toInt()
 
-        captureWebView = WebView(this).apply {
-            settings.javaScriptEnabled = false
-            webViewClient = WebViewClient()
-            setWebChromeClient(WebChromeClient())
+            captureWebView = WebView(this).apply {
+                settings.javaScriptEnabled = false
+                webViewClient = WebViewClient()
+                setWebChromeClient(WebChromeClient())
 
-            measure(
-                View.MeasureSpec.makeMeasureSpec(vpWidth, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(vpHeight, View.MeasureSpec.EXACTLY)
-            )
-            layout(0, 0, vpWidth, vpHeight)
+                measure(
+                    View.MeasureSpec.makeMeasureSpec(vpWidth, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(vpHeight, View.MeasureSpec.EXACTLY)
+                )
+                layout(0, 0, vpWidth, vpHeight)
 
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-                    val wv = captureWebView
-                    if (wv != null && wv.width > 0 && wv.height > 0) {
-                        CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                        val wv = captureWebView
+                        if (wv != null && wv.width > 0 && wv.height > 0) {
+                            CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                        }
                     }
                 }
+                loadUrl("file:///android_asset/capture_test.html")
             }
-            loadUrl("file:///android_asset/capture_test.html")
         }
 
         setContent {
             MyApplicationTheme {
-                MainScreen()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    MainScreen()
+
+                    if (BuildConfig.DEBUG) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
+                        ) {
+                            Button(onClick = {
+                                val intent = Intent(this@MainActivity, ScreenCaptureService::class.java).apply {
+                                    action = ScreenCaptureService.ACTION_START_INTERNAL_CAPTURE
+                                }
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    startForegroundService(intent)
+                                } else {
+                                    startService(intent)
+                                }
+                            }) {
+                                Text("Debug: Start Internal Capture", fontSize = 10.sp)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
