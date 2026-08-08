@@ -108,6 +108,10 @@ import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.dart.DartExecutor
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
@@ -156,6 +160,7 @@ class MainActivity : ComponentActivity() {
     private var captureWebView: WebView? = null
     private var internalDebugSessionStarted = false
     private val internalCaptureProviderReady = mutableStateOf(false)
+    private var flutterEngine: FlutterEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -220,80 +225,98 @@ class MainActivity : ComponentActivity() {
                                 .align(Alignment.BottomEnd)
                                 .padding(16.dp)
                         ) {
-                            Button(
-                                enabled = internalCaptureProviderReady.value ||
-                                    internalDebugSessionStarted ||
-                                    ScreenCaptureService.isInternalCaptureActive.value,
-                                onClick = {
-                                    when {
-                                    internalDebugSessionStarted || ScreenCaptureService.isInternalCaptureActive.value -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Internal capture is already active — tap the bubble to capture",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                    ScreenCaptureService.isServiceActive.value -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Stop ScreenPilot before starting internal debug capture",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    !Settings.canDrawOverlays(this@MainActivity) -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Overlay permission required for debug capture",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                    CaptureProviderRegistry.get() == null -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Internal test page is still loading — try again in a moment",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                    else -> {
-                                        val intent = Intent(this@MainActivity, ScreenCaptureService::class.java).apply {
-                                            action = ScreenCaptureService.ACTION_START_INTERNAL_CAPTURE
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    enabled = internalCaptureProviderReady.value ||
+                                        internalDebugSessionStarted ||
+                                        ScreenCaptureService.isInternalCaptureActive.value,
+                                    onClick = {
+                                        when {
+                                        internalDebugSessionStarted || ScreenCaptureService.isInternalCaptureActive.value -> {
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Internal capture is already active — tap the bubble to capture",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
-                                        try {
-                                            // Internal capture is Activity-scoped and deliberately
-                                            // is not a mediaProjection foreground service.
-                                            startService(intent)
-                                            internalDebugSessionStarted = true
+                                        ScreenCaptureService.isServiceActive.value -> {
                                             Toast.makeText(
                                                 this@MainActivity,
-                                                "Internal capture ready — tap bubble to capture. Output: Pictures/ScreenPilotDebug",
+                                                "Stop ScreenPilot before starting internal debug capture",
                                                 Toast.LENGTH_LONG
                                             ).show()
-                                        } catch (e: Exception) {
-                                            internalDebugSessionStarted = false
+                                        }
+                                        !Settings.canDrawOverlays(this@MainActivity) -> {
                                             Toast.makeText(
                                                 this@MainActivity,
-                                                "Failed to start internal capture: ${e.message ?: e.javaClass.simpleName}",
+                                                "Overlay permission required for debug capture",
                                                 Toast.LENGTH_LONG
                                             ).show()
+                                        }
+                                        CaptureProviderRegistry.get() == null -> {
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Internal test page is still loading — try again in a moment",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                        else -> {
+                                            val intent = Intent(this@MainActivity, ScreenCaptureService::class.java).apply {
+                                                action = ScreenCaptureService.ACTION_START_INTERNAL_CAPTURE
+                                            }
+                                            try {
+                                                // Internal capture is Activity-scoped and deliberately
+                                                // is not a mediaProjection foreground service.
+                                                startService(intent)
+                                                internalDebugSessionStarted = true
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Internal capture ready — tap bubble to capture. Output: Pictures/ScreenPilotDebug",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            } catch (e: Exception) {
+                                                internalDebugSessionStarted = false
+                                                Toast.makeText(
+                                                    this@MainActivity,
+                                                    "Failed to start internal capture: ${e.message ?: e.javaClass.simpleName}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            ) {
-                                Text(
-                                    if (internalCaptureProviderReady.value) {
-                                        "Debug: Start Internal Capture"
-                                    } else {
-                                        "Debug: Loading Internal Test…"
-                                    },
-                                    fontSize = 10.sp
-                                )
+                                ) {
+                                    Text(
+                                        if (internalCaptureProviderReady.value) {
+                                            "Debug: Start Internal Capture"
+                                        } else {
+                                            "Debug: Loading Internal Test…"
+                                        },
+                                        fontSize = 10.sp
+                                    )
+                                }
+
+                                // Phase 3.1: minimal Flutter test host — proves the Flutter
+                                // module embeds and displays inside this Android app.
+                                Button(onClick = { openFlutterTest() }) {
+                                    Text("Open Flutter Test", fontSize = 10.sp)
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun openFlutterTest() {
+        if (flutterEngine == null) {
+            val engine = FlutterEngine(this)
+            engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
+            FlutterEngineCache.getInstance().put(FLUTTER_ENGINE_ID, engine)
+            flutterEngine = engine
+        }
+        startActivity(FlutterActivity.withCachedEngine(FLUTTER_ENGINE_ID).build(this))
     }
 
     override fun onDestroy() {
@@ -318,6 +341,10 @@ class MainActivity : ComponentActivity() {
         captureWebView?.destroy()
         captureWebView = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val FLUTTER_ENGINE_ID = "flutter_test_host_engine"
     }
 }
 

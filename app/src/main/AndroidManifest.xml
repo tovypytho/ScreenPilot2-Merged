@@ -29,6 +29,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Flutter host screen (Phase 3.1 test host). -->
+        <activity
+            android:name="io.flutter.embedding.android.FlutterActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:theme="@style/LaunchTheme"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".service.ScreenCaptureService"
             android:enabled="true"
