@@ -73,9 +73,8 @@ android {
 dependencies {
   // Flutter test host (Phase 3.1), consumed as a prebuilt AAR from the local
   // Maven repo produced by `flutter build aar` (see settings.gradle.kts).
-  debugImplementation("id.eujian.cbt.flutter_test_host:flutter_debug:1.0.0")
-  profileImplementation("id.eujian.cbt.flutter_test_host:flutter_profile:1.0.0")
-  releaseImplementation("id.eujian.cbt.flutter_test_host:flutter_release:1.0.0")
+  debugImplementation("id.eujian.cbt.flutter_test_host:flutter_debug:1.0")
+  releaseImplementation("id.eujian.cbt.flutter_test_host:flutter_release:1.0")
   implementation(platform(libs.androidx.compose.bom))
   // implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)

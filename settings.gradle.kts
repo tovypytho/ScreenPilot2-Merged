@@ -23,6 +23,8 @@ dependencyResolutionManagement {
     // module (Phase 3.1). The host consumes the Flutter embedding as a prebuilt AAR,
     // so no Flutter Gradle plugin is required in this build.
     maven { url = uri("flutter_test_host/build/host/outputs/repo") }
+    // Flutter engine/embedding artifacts referenced transitively by the generated AAR POM.
+    maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
   }
 }
 
