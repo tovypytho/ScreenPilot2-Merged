@@ -73,7 +73,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import id.eujian.cbt.screenpilot.MainActivity
-import id.eujian.cbt.screenpilot.capture.CaptureProvider
+import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.capture.CaptureResult
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
@@ -128,6 +128,7 @@ class ScreenCaptureService : Service() {
         private const val CHANNEL_ID = "screen_pilot_capture_channel"
 
         const val ACTION_START = "com.example.action.START"
+        const val ACTION_START_INTERNAL_CAPTURE = "com.example.action.START_INTERNAL_CAPTURE"
         const val ACTION_STOP = "com.example.action.STOP"
         const val ACTION_LOCATE_BUTTON = "com.example.action.LOCATE_BUTTON"
         const val ACTION_SHOW_PREVIEW = "com.example.action.SHOW_PREVIEW"
@@ -188,7 +189,12 @@ class ScreenCaptureService : Service() {
     private val captureState = MutableStateFlow(CaptureState.IDLE)
     private val stateMutex = Mutex()
 
-    var captureProvider: CaptureProvider? = null
+    private enum class CaptureSource {
+        MEDIA_PROJECTION,
+        INTERNAL_PROVIDER
+    }
+
+    private var currentCaptureSource: CaptureSource = CaptureSource.MEDIA_PROJECTION
 
     enum class StagedCaptureState {
         IDLE,
@@ -538,6 +544,39 @@ class ScreenCaptureService : Service() {
             showStatusBubble("Simulating Low Memory...", 1500L)
             onTrimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL)
             return START_NOT_STICKY
+        }
+
+        if (action == ACTION_START_INTERNAL_CAPTURE) {
+            currentCaptureSource = CaptureSource.INTERNAL_PROVIDER
+            serviceScope.launch {
+                val sessionId = java.util.UUID.randomUUID().toString()
+                preferencesRepository.updateSessionId(sessionId)
+                preferencesRepository.updateSessionActivationTime(System.currentTimeMillis())
+                preferencesRepository.updateSessionServiceStarted(true)
+                preferencesRepository.updateSessionGracefulShutdown(false)
+                preferencesRepository.updateSessionShutdownReason("")
+                preferencesRepository.updateSessionForegroundPromoted(false)
+                preferencesRepository.updateSessionProjectionInitialized(false)
+                preferencesRepository.updateSessionFloatingCreated(false)
+                preferencesRepository.updateSessionLastActionStage("STARTING")
+                preferencesRepository.updateSessionLastHealthyTime(System.currentTimeMillis())
+            }
+
+            startForegroundWithNotification()
+            serviceScope.launch {
+                preferencesRepository.updateSessionForegroundPromoted(true)
+                preferencesRepository.updateSessionProjectionInitialized(false)
+                showFloatingButton()
+                preferencesRepository.updateSessionFloatingCreated(true)
+                isServiceActive.value = true
+                lastError.value = null
+
+                preferencesRepository.updateSessionLastActionStage("RUNNING")
+                preferencesRepository.updateSessionLastHealthyTime(System.currentTimeMillis())
+
+                startSessionHealthWatcher()
+            }
+            return START_STICKY
         }
 
         if (action == ACTION_START) {
@@ -2044,8 +2083,13 @@ class ScreenCaptureService : Service() {
     }
 
     private suspend fun captureScreen(): Bitmap? {
-        val provider = captureProvider
-        if (provider != null) {
+        val source = currentCaptureSource
+        val provider = CaptureProviderRegistry.get()
+        if (source == CaptureSource.INTERNAL_PROVIDER) {
+            if (provider == null) {
+                Log.w(TAG, "INTERNAL provider mode: no CaptureProvider registered")
+                return null
+            }
             return when (val result = provider.capture()) {
                 is CaptureResult.Success -> {
                     lastCapturePurpose = "WEBVIEW_CAPTURE"
@@ -2810,17 +2854,19 @@ class ScreenCaptureService : Service() {
         var hasFatalError = false
         var fatalReason = ""
 
-        if (mediaProjection == null) {
-            hasFatalError = true
-            fatalReason = "MediaProjection is null"
-        }
-        if (virtualDisplay == null) {
-            hasFatalError = true
-            fatalReason = "VirtualDisplay is null"
-        }
-        if (imageReader == null) {
-            hasFatalError = true
-            fatalReason = "ImageReader is null"
+        if (currentCaptureSource == CaptureSource.MEDIA_PROJECTION) {
+            if (mediaProjection == null) {
+                hasFatalError = true
+                fatalReason = "MediaProjection is null"
+            }
+            if (virtualDisplay == null) {
+                hasFatalError = true
+                fatalReason = "VirtualDisplay is null"
+            }
+            if (imageReader == null) {
+                hasFatalError = true
+                fatalReason = "ImageReader is null"
+            }
         }
 
         if (hasFatalError) {

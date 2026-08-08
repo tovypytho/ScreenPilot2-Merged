@@ -102,7 +102,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import android.view.View
+import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.webkit.WebViewClient
+import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
 import id.eujian.cbt.screenpilot.data.HistoryQuestionType
@@ -146,20 +150,50 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
+    private var captureWebView: WebView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val captureWebView = WebView(this)
-        captureWebView.settings.javaScriptEnabled = false
-        captureWebView.loadUrl("file:///android_asset/capture_test.html")
-        ScreenCaptureService.captureProvider = WebViewCaptureProvider(captureWebView)
+        val density = resources.displayMetrics.density
+        val vpWidth = (1080 * density).toInt()
+        val vpHeight = (1920 * density).toInt()
+
+        captureWebView = WebView(this).apply {
+            settings.javaScriptEnabled = false
+            webViewClient = WebViewClient()
+            setWebChromeClient(WebChromeClient())
+
+            measure(
+                View.MeasureSpec.makeMeasureSpec(vpWidth, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(vpHeight, View.MeasureSpec.EXACTLY)
+            )
+            layout(0, 0, vpWidth, vpHeight)
+
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                    val wv = captureWebView
+                    if (wv != null && wv.width > 0 && wv.height > 0) {
+                        CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                    }
+                }
+            }
+            loadUrl("file:///android_asset/capture_test.html")
+        }
 
         setContent {
             MyApplicationTheme {
                 MainScreen()
             }
         }
+    }
+
+    override fun onDestroy() {
+        CaptureProviderRegistry.clear()
+        captureWebView?.destroy()
+        captureWebView = null
+        super.onDestroy()
     }
 }
 
