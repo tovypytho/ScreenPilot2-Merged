@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+**/build/
+local.properties
+
+# Kotlin/JVM
+.kotlin/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+*.keystore
+*.jks
+
+# Signing / secrets — never commit
+my-upload-key.*
+*.jks
+*.keystore
+secrets.properties
+local.properties
+
+# IDE / local generated files
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Not ignored — required by build
+# (explicit keep. Gradle wrapper + version catalog MUST be committed)
+!gradle/wrapper/gradle-wrapper.jar
+!gradlew
+!gradlew.bat
+!gradle/libs.versions.toml
