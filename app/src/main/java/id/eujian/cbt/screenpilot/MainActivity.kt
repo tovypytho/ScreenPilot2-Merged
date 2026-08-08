@@ -112,6 +112,7 @@ import id.eujian.cbt.screenpilot.data.PreferencesRepository
 import id.eujian.cbt.screenpilot.data.GeminiKeySlot
 import id.eujian.cbt.screenpilot.data.GeminiKeyHealth
 import id.eujian.cbt.screenpilot.data.GeminiKeySlotSerializer
+import id.eujian.cbt.screenpilot.notification.EssayAnswerNotificationManager
 import id.eujian.cbt.screenpilot.service.ScreenCaptureService
 import id.eujian.cbt.screenpilot.service.ConnectionTester
 import id.eujian.cbt.screenpilot.ui.theme.MyApplicationTheme
@@ -2385,7 +2386,7 @@ fun MainScreen(apiKeyStore: ApiKeyStore = KeyStoreHelper) {
                             Spacer(modifier = Modifier.height(6.dp))
                             OutlinedButton(
                                 onClick = {
-                                    notification.EssayAnswerNotificationManager.showAnswer(
+                                    EssayAnswerNotificationManager.showAnswer(
                                         context,
                                         "Fotosintesis mengubah energi cahaya menjadi energi kimia yang disimpan dalam bentuk glukosa."
                                     )

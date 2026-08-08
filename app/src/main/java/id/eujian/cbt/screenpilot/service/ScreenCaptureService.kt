@@ -84,6 +84,10 @@ import id.eujian.cbt.screenpilot.data.AnswerPopupStyle
 import id.eujian.cbt.screenpilot.data.GeminiKeySlot
 import id.eujian.cbt.screenpilot.data.GeminiKeySlotSerializer
 import id.eujian.cbt.screenpilot.data.GeminiKeyHealth
+import id.eujian.cbt.screenpilot.data.PopupBackgroundTheme
+import id.eujian.cbt.screenpilot.data.PopupFontWeight
+import id.eujian.cbt.screenpilot.data.PopupStyle
+import id.eujian.cbt.screenpilot.data.PopupTextColorMode
 import id.eujian.cbt.screenpilot.notification.EssayAnswerNotificationManager
 import id.eujian.cbt.screenpilot.notification.EssayNotificationResult
 import kotlinx.coroutines.CancellationException
@@ -2452,26 +2456,26 @@ class ScreenCaptureService : Service() {
                 setViewTreeSavedStateRegistryOwner(answerLifecycleOwner)
                 setContent {
                     val isDark = when (style.backgroundTheme) {
-                        id.eujian.cbt.screenpilot.data.PopupBackgroundTheme.DARK -> true
-                        id.eujian.cbt.screenpilot.data.PopupBackgroundTheme.LIGHT -> false
-                        id.eujian.cbt.screenpilot.data.PopupBackgroundTheme.AUTO_CONTRAST -> true
+                        PopupBackgroundTheme.DARK -> true
+                        PopupBackgroundTheme.LIGHT -> false
+                        PopupBackgroundTheme.AUTO_CONTRAST -> true
                     }
                     val bgColor = if (isDark) Color(0xFF1E1E1E) else Color(0xFFF5F5F5)
                     val defaultTextColor = if (isDark) Color.White else Color.Black
 
                     val textColor = when (style.textColorMode) {
-                        id.eujian.cbt.screenpilot.data.PopupTextColorMode.WHITE -> Color.White
-                        id.eujian.cbt.screenpilot.data.PopupTextColorMode.BLACK -> Color.Black
-                        id.eujian.cbt.screenpilot.data.PopupTextColorMode.AUTO -> {
-                            if (style.backgroundTheme == id.eujian.cbt.screenpilot.data.PopupBackgroundTheme.AUTO_CONTRAST) Color.White else defaultTextColor
+                        PopupTextColorMode.WHITE -> Color.White
+                        PopupTextColorMode.BLACK -> Color.Black
+                        PopupTextColorMode.AUTO -> {
+                            if (style.backgroundTheme == PopupBackgroundTheme.AUTO_CONTRAST) Color.White else defaultTextColor
                         }
                     }
 
                     val fontWeightVal = when (style.fontWeight) {
-                        id.eujian.cbt.screenpilot.data.PopupFontWeight.NORMAL -> FontWeight.Normal
-                        id.eujian.cbt.screenpilot.data.PopupFontWeight.MEDIUM -> FontWeight.Medium
-                        id.eujian.cbt.screenpilot.data.PopupFontWeight.SEMI_BOLD -> FontWeight.SemiBold
-                        id.eujian.cbt.screenpilot.data.PopupFontWeight.BOLD -> FontWeight.Bold
+                        PopupFontWeight.NORMAL -> FontWeight.Normal
+                        PopupFontWeight.MEDIUM -> FontWeight.Medium
+                        PopupFontWeight.SEMI_BOLD -> FontWeight.SemiBold
+                        PopupFontWeight.BOLD -> FontWeight.Bold
                     }
 
                     val scaledFontSize = (style.fontSizeSp * style.popupScale).sp
@@ -2480,18 +2484,18 @@ class ScreenCaptureService : Service() {
                     val scaledCornerRadius = (style.cornerRadiusDp * style.popupScale).dp
 
                     val finalShape = when (style.popupStyle) {
-                        id.eujian.cbt.screenpilot.data.PopupStyle.CIRCLE -> CircleShape
-                        id.eujian.cbt.screenpilot.data.PopupStyle.PILL -> CircleShape
-                        id.eujian.cbt.screenpilot.data.PopupStyle.TEXT_ONLY -> RoundedCornerShape(0.dp)
-                        id.eujian.cbt.screenpilot.data.PopupStyle.COMPACT_ROUNDED -> RoundedCornerShape(scaledCornerRadius)
+                        PopupStyle.CIRCLE -> CircleShape
+                        PopupStyle.PILL -> CircleShape
+                        PopupStyle.TEXT_ONLY -> RoundedCornerShape(0.dp)
+                        PopupStyle.COMPACT_ROUNDED -> RoundedCornerShape(scaledCornerRadius)
                     }
 
-                    val showBackground = style.popupStyle != id.eujian.cbt.screenpilot.data.PopupStyle.TEXT_ONLY
+                    val showBackground = style.popupStyle != PopupStyle.TEXT_ONLY
                     // A fixed circular popup is appropriate for one-character answers only.
                     // Multi-select answers such as "(1,2)" automatically use the wrap-content
                     // branch so they are not clipped even when the user selected Circle style.
                     val useFixedCircleLayout =
-                        style.popupStyle == id.eujian.cbt.screenpilot.data.PopupStyle.CIRCLE && answer.length == 1
+                        style.popupStyle == PopupStyle.CIRCLE && answer.length == 1
 
                     Box(
                         modifier = Modifier
@@ -2534,7 +2538,7 @@ class ScreenCaptureService : Service() {
                                 }
                             }
                         } else {
-                            val actualHorizontalPadding = if (style.popupStyle == id.eujian.cbt.screenpilot.data.PopupStyle.PILL) {
+                            val actualHorizontalPadding = if (style.popupStyle == PopupStyle.PILL) {
                                 scaledHorizontalPadding * 1.5f
                             } else {
                                 scaledHorizontalPadding
