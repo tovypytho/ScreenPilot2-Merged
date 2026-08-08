@@ -30,6 +30,9 @@ Accepted. The project-owned internal WebView test harness is Activity-scoped and
 ## D006d — Scoped debug capture evidence
 Accepted. On Android 10+, successful `INTERNAL_PROVIDER` captures may write an additional diagnostic PNG via MediaStore to `Pictures/ScreenPilotDebug`. This export is debug verification only, uses no broad storage permission, never captures the device display, and must not duplicate normal MediaProjection screenshots.
 
+## D006e — Off-screen provider registration uses the main Looper
+Accepted. The debug WebView is intentionally off-screen and never attached to a ViewRoot, so `View.post` may queue forever. Provider registration after `onPageFinished` must post through `Handler(Looper.getMainLooper())`, re-measure/layout the fixed 1080×1920 viewport, and only then set `CaptureProviderRegistry`. A Compose readiness state gates the debug button (`Debug: Loading Internal Test…` → `Debug: Start Internal Capture`).
+
 ## D007 — Flutter integration starts with a test host
 Planned for Phase 3. Prove Flutter↔Kotlin communication with a small test host before any larger authorized integration.
 

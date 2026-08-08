@@ -26,13 +26,16 @@
 - [x] Add MediaStore debug PNG export to `Pictures/ScreenPilotDebug` on API 29+
 - [x] Add unmistakable HTML marker `SP-WEBVIEW-2026-08`
 - [x] Add API-28 test proving no legacy public-storage permission is introduced
-- [ ] Review corrective patch in Git working tree
-- [ ] Push corrective patch and run GitHub Actions
-- [ ] Confirm new CI compile + tests + assembleDebug + lint are GREEN
-- [ ] Runtime smoke from fresh app: internal start without MediaProjection dialog or FC
-- [ ] Tap bubble and confirm `Pictures/ScreenPilotDebug/capture_test_*.png` exists
-- [ ] Confirm PNG contains `SCREENPILOT INTERNAL WEBVIEW TEST` / `SP-WEBVIEW-2026-08`
-- [ ] Mark Phase-2 runtime checkpoint GREEN
+- [x] Review corrective patch in Git working tree
+- [x] Push corrective patch and run GitHub Actions
+- [x] Confirm new CI compile + tests + assembleDebug + lint are GREEN (run #12, commit `d50a817`)
+- [x] Runtime smoke from fresh app: internal start without MediaProjection dialog or FC
+- [x] Tap bubble and confirm `Pictures/ScreenPilotDebug/capture_test_*.png` exists
+- [x] Confirm PNG contains `SCREENPILOT INTERNAL WEBVIEW TEST` / `SP-WEBVIEW-2026-08`
+- [x] Mark Phase-2 runtime checkpoint GREEN
+
+## Phase 2 — Final Status
+**GREEN** — implementation complete, corrective fix chain landed (`12f1587`, `7c99e84`, `d50a817`), CI run #12 passed, and the on-device runtime smoke test passed (fresh session without MediaProjection/FC, marked PNG exported).
 
 ## Phase 3 — Flutter Test Host
 Start only after Phase 2 is green.

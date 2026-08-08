@@ -36,4 +36,4 @@ Before changing code, read `PROJECT_STATE.md`, `DECISIONS.md`, `TODO.md`, and th
 - Test fakes/mocks must stay test-only and must not reproduce spoofed production identities.
 
 ## Current Checkpoint
-Phase 1 is GREEN. Phase 2 baseline CI is GREEN, but runtime smoke testing exposed an internal-debug startup issue. The current checkpoint is to verify the corrective internal-provider patch in GitHub Actions and then prove on-device that a fresh internal session starts without MediaProjection and exports the marked project-owned WebView image to `Pictures/ScreenPilotDebug`. Do not begin Phase 3 before that checkpoint is GREEN.
+Phase 1 GREEN. Phase 2 final GREEN: CI run #12 (commit `d50a817`) passes compile, unit tests, assembleDebug, and lint; the on-device runtime smoke test passes — a fresh internal debug session starts without MediaProjection consent or force-close, and the bubble capture exports the marked project-owned WebView PNG (`SP-WEBVIEW-2026-08`) to `Pictures/ScreenPilotDebug`. Next milestone is Phase 3 (Flutter test host).

@@ -3,7 +3,7 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 1 GREEN. Phase 2 CI baseline GREEN at commit `69db963` / run `31248721397`, but runtime smoke exposed an internal-start lifecycle/foreground-service bug. A corrective internal-debug patch is prepared locally and requires a new CI run plus device smoke test. Phase 3 remains blocked.**
+**Phase 1 GREEN. Phase 2 final GREEN at commit `d50a817` / CI run #12 (`12`). Runtime smoke verified on device: a fresh internal debug session starts without MediaProjection consent or force-close, and the bubble capture exports the marked project-owned WebView PNG to `Pictures/ScreenPilotDebug`. Next milestone: Phase 3 (Flutter test host).**
 
 ## Completed
 - Standalone Android/Kotlin baseline established and pushed to GitHub.
@@ -13,16 +13,21 @@ Last updated: 2026-08-08
 - Internal provider and MediaProjection are explicit capture-source modes.
 - `FakeCaptureProvider` is test-only; bitmap tests run with Robolectric.
 - Project-owned debug asset is `app/src/debug/assets/capture_test.html`.
-- Phase 2 CI baseline run `31248721397` is GREEN.
+- Phase 2 baseline CI run `31248721397` is GREEN.
 - Runtime debug trigger exists and normal ScreenPilot features were reported working.
+- Corrective fix chain for the internal-debug startup issue landed and is CI GREEN: `12f1587` (decouple internal capture + debug WebView export), `7c99e84` (register offscreen WebView provider without view attachment), `d50a817` (close internal debug button click lambda).
+- Final CI run #12 (`d50a817`) is GREEN: compile, unit tests, assembleDebug, lint, artifact upload.
+- On-device runtime smoke test passed: fresh internal session without MediaProjection consent or force-close; bubble capture produced `Pictures/ScreenPilotDebug/capture_test_*.png` containing `SP-WEBVIEW-2026-08`.
 
-## Runtime Finding and Corrective Work
+## Runtime Finding and Corrective Work (RESOLVED)
 - Fresh internal-debug start could exit/force-close while starting internal mode after a previously authorized MediaProjection session did not, indicating accidental dependency on the mediaProjection foreground-service path.
 - Corrective patch removes foreground MediaProjection promotion from `ACTION_START_INTERNAL_CAPTURE`; normal `ACTION_START` MediaProjection behavior is retained.
 - Internal debug mode is Activity-scoped, `START_NOT_STICKY`, overlay/provider guarded, and mixed sessions are rejected.
 - Debug WebView viewport is fixed at 1080×1920 physical pixels instead of density-scaled dimensions.
 - Successful internal WebView captures are additionally exported on Android 10+ to `Pictures/ScreenPilotDebug/capture_test_*.png` via MediaStore for direct visual verification.
 - `capture_test.html` includes marker `SP-WEBVIEW-2026-08` to prove the exported image came from the project-owned WebView.
+- Off-screen WebView registration issue (provider stayed null because `View.post` waits for view attachment) fixed by posting through `Handler(Looper.getMainLooper())` with a re-measured 1080×1920 layout, guarded by a Compose readiness state `internalCaptureProviderReady`.
+- Button shows `Debug: Loading Internal Test…` (disabled) until the provider is ready, then `Debug: Start Internal Capture` (enabled).
 
 ## Static Verification
 Passed:
@@ -41,18 +46,10 @@ Passed:
 - no local.properties, APK/AAB, .gradle, JADX evidence, or generated files staged
 
 ## Remaining Risk
-The corrective runtime patch has not yet been verified by GitHub Actions or a device. The critical acceptance test is a fresh internal-provider session with no MediaProjection permission/session, followed by a bubble capture that produces `Pictures/ScreenPilotDebug/capture_test_*.png`.
+No open Phase 2 blockers. Residual items: the debug harness is debug-build-only and covered by a `BuildConfig.DEBUG` guard; the MediaStore export only runs on API 29+. Phase 3 introduces the Flutter toolchain on CI, which is the next integration risk to manage.
 
-## Do Not Start Yet
-Until the corrective patch is CI GREEN and the runtime smoke test passes:
-- no Flutter test host
-- no MethodChannel bridge
-- no Phase 3 integration work
-- no broad storage/API refactor
-
-## Next Milestone
-1. Copy/review the corrective patch in the Git working tree.
-2. Run GitHub Actions and require compile + unit tests + assembleDebug + lint GREEN.
-3. Install the resulting debug APK.
-4. Verify fresh internal capture works without MediaProjection and exports the marked WebView PNG.
-5. Mark Phase 2 final GREEN only after that runtime evidence exists.
+## Next Milestone (Phase 3 — Flutter Test Host)
+Phase 2 is final GREEN. Phase 3 begins:
+1. Create a minimal Flutter test host proving Flutter↔Kotlin communication (MethodChannel/native bridge).
+2. Exchange status/settings/events only for allowed/project-owned content.
+3. Keep CI reproducible and GREEN; write `PHASE3_REPORT.md`.
