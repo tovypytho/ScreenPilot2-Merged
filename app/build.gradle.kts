@@ -71,7 +71,11 @@ android {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
-  implementation(project(":flutter"))
+  // Flutter test host (Phase 3.1), consumed as a prebuilt AAR from the local
+  // Maven repo produced by `flutter build aar` (see settings.gradle.kts).
+  debugImplementation("id.eujian.cbt.flutter_test_host:flutter_debug:1.0.0")
+  profileImplementation("id.eujian.cbt.flutter_test_host:flutter_profile:1.0.0")
+  releaseImplementation("id.eujian.cbt.flutter_test_host:flutter_release:1.0.0")
   implementation(platform(libs.androidx.compose.bom))
   // implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)

@@ -37,9 +37,7 @@ Icon?
 .tags*
 
 build/
-# The .android host must be committed for add-to-app embedding.
-# Machine-specific .android/local.properties stays ignored (repo root pattern).
-!.android/
+.android/
 .ios/
 .flutter-plugins-dependencies
 

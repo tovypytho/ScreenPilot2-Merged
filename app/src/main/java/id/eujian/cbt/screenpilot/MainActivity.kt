@@ -109,9 +109,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.engine.FlutterEngineCache
-import io.flutter.embedding.engine.dart.DartExecutor
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
@@ -160,7 +157,6 @@ class MainActivity : ComponentActivity() {
     private var captureWebView: WebView? = null
     private var internalDebugSessionStarted = false
     private val internalCaptureProviderReady = mutableStateOf(false)
-    private var flutterEngine: FlutterEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -310,13 +306,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openFlutterTest() {
-        if (flutterEngine == null) {
-            val engine = FlutterEngine(this)
-            engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
-            FlutterEngineCache.getInstance().put(FLUTTER_ENGINE_ID, engine)
-            flutterEngine = engine
-        }
-        startActivity(FlutterActivity.withCachedEngine(FLUTTER_ENGINE_ID).build(this))
+        // Phase 3.1: launch the Flutter module (consumed as a prebuilt AAR).
+        startActivity(FlutterActivity.createDefaultIntent(this))
     }
 
     override fun onDestroy() {
@@ -341,10 +332,6 @@ class MainActivity : ComponentActivity() {
         captureWebView?.destroy()
         captureWebView = null
         super.onDestroy()
-    }
-
-    companion object {
-        private const val FLUTTER_ENGINE_ID = "flutter_test_host_engine"
     }
 }
 

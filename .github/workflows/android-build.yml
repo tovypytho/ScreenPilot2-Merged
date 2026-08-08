@@ -42,7 +42,12 @@ jobs:
           flutter pub get
           flutter precache --android
           cd ..
-          echo "flutter.sdk=$FLUTTER_ROOT" >> local.properties
+
+      - name: Build Flutter AAR (debug)
+        run: |
+          cd flutter_test_host
+          flutter build aar --debug
+          cd ..
 
       - name: Compile ScreenPilot
         run: ./gradlew :app:compileDebugKotlin --rerun-tasks
