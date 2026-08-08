@@ -73,6 +73,8 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import id.eujian.cbt.screenpilot.MainActivity
+import id.eujian.cbt.screenpilot.capture.CaptureProvider
+import id.eujian.cbt.screenpilot.capture.CaptureResult
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
 import id.eujian.cbt.screenpilot.data.HistoryRepository
@@ -185,6 +187,8 @@ class ScreenCaptureService : Service() {
     }
     private val captureState = MutableStateFlow(CaptureState.IDLE)
     private val stateMutex = Mutex()
+
+    var captureProvider: CaptureProvider? = null
 
     enum class StagedCaptureState {
         IDLE,
@@ -2040,6 +2044,23 @@ class ScreenCaptureService : Service() {
     }
 
     private suspend fun captureScreen(): Bitmap? {
+        val provider = captureProvider
+        if (provider != null) {
+            return when (val result = provider.capture()) {
+                is CaptureResult.Success -> {
+                    lastCapturePurpose = "WEBVIEW_CAPTURE"
+                    result.bitmap
+                }
+                is CaptureResult.Denied -> {
+                    Log.w(TAG, "CaptureProvider denied capture")
+                    null
+                }
+                is CaptureResult.Error -> {
+                    Log.e(TAG, "CaptureProvider error: ${result.message}")
+                    null
+                }
+            }
+        }
         return captureSurfaceMutex.withLock {
             if (!isInfrastructureHealthy) return@withLock null
             val reader = imageReader ?: return@withLock null

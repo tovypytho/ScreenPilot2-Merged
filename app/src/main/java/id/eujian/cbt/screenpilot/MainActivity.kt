@@ -102,6 +102,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import android.webkit.WebView
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
 import id.eujian.cbt.screenpilot.data.HistoryQuestionType
@@ -113,6 +114,7 @@ import id.eujian.cbt.screenpilot.data.GeminiKeySlot
 import id.eujian.cbt.screenpilot.data.GeminiKeyHealth
 import id.eujian.cbt.screenpilot.data.GeminiKeySlotSerializer
 import id.eujian.cbt.screenpilot.notification.EssayAnswerNotificationManager
+import id.eujian.cbt.screenpilot.capture.WebViewCaptureProvider
 import id.eujian.cbt.screenpilot.service.ScreenCaptureService
 import id.eujian.cbt.screenpilot.service.ConnectionTester
 import id.eujian.cbt.screenpilot.ui.theme.MyApplicationTheme
@@ -147,6 +149,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val captureWebView = WebView(this)
+        captureWebView.settings.javaScriptEnabled = false
+        captureWebView.loadUrl("file:///android_asset/capture_test.html")
+        ScreenCaptureService.captureProvider = WebViewCaptureProvider(captureWebView)
+
         setContent {
             MyApplicationTheme {
                 MainScreen()
