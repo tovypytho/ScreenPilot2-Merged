@@ -7,7 +7,7 @@ plugins {
 
 android {
   namespace = "id.eujian.cbt.screenpilot"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "id.eujian.cbt.screenpilot"
