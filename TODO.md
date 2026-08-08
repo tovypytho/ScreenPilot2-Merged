@@ -1,57 +1,37 @@
 # TODO.md — Project Roadmap
 
 ## Current: Phase 2 — Capture Abstraction
-- [x] Backup pre-Phase-1 MergedProject
-- [x] Remove `../../E-Ujian_RE_JADX` Gradle sourceSets
-- [x] Align namespace/applicationId
-- [x] Migrate production `com.example.*` type references
-- [x] Update test/androidTest namespaces
-- [x] Use local ScreenPilot AndroidManifest
-- [x] Static verification
-- [x] Create `PHASE1_REPORT.md`
-- [x] Add project memory files (AGENTS.md, PROJECT_STATE.md, DECISIONS.md, TODO.md)
-- [x] Ensure `.gitignore` excludes `.gradle/`, `build/`, APKs, local SDK config, and secrets
-- [x] Review `.github/workflows/android-build.yml` (compatible with JDK21/Gradle 9.3.1/AGP 9.1.1/compileSdk35)
-- [x] Audit filesystem (E-Ujian_RE_JADX stub = empty, androidTest path, not a git repo)
-- [x] Create `PRE_CI_REPORT.md`
-- [x] Remove empty internal stub `MergedProject/E-Ujian_RE_JADX/` (confirmed 0 files; external evidence untouched)
-- [x] Move androidTest to `app/src/androidTest/java/id/eujian/cbt/screenpilot/`; remove legacy `com/example` dirs
-- [x] Audit `.gitignore` final contents (no global `*.properties`; wrapper/gradlew/toml kept)
-- [x] Final static verification (all PASS)
-- [x] Create `FINAL_REPO_CHECK.md`
-- [x] `git init -b main`
-- [x] Verify `.gitignore` via `git check-ignore`
-- [x] Verify required build files are trackable
-- [x] `git add .` (93 files staged)
-- [x] Audit staged files (secrets, local.properties, APK/AAB, build outputs, .gradle, JADX/evidence, generated files — all clean)
-- [x] Commit "chore: establish standalone ScreenPilot baseline" (commit 8aabf1a)
-- [x] Update PROJECT_STATE.md
-- [x] Update TODO.md
-- [x] Create `GIT_BASELINE_REPORT.md`
-- [x] Push Phase-1 baseline to GitHub
-- [x] CI #1: compile OK (2 fixes: package refs, coreKtx version)
-- [x] Mark Phase-1 CI checkpoint GREEN
-- [x] Define `CaptureProvider` interface + `CaptureResult` sealed class
-- [x] Implement `WebViewCaptureProvider` (WebView → Bitmap via Canvas)
-- [x] Create `FakeCaptureProvider` for unit tests
-- [x] Create `app/src/main/assets/capture_test.html`
-- [x] Wire `WebViewCaptureProvider` in `MainActivity.onCreate()`
-- [x] Inject captureProvider via registry into ScreenCaptureService; fallback to MediaProjection for MEDIA_PROJECTION source only
-- [x] Add CaptureSource enum + ACTION_START_INTERNAL_CAPTURE (no MediaProjection for internal mode)
-- [x] Health watcher skips MediaProjection checks in INTERNAL_PROVIDER mode
-- [x] Create CaptureProviderRegistry (thread-safe provider holder)
-- [x] WebViewCaptureProvider uses WeakReference
-- [x] WebView viewport: explicit measure/layout (1080x1920) in MainActivity
-- [x] Lifecycle-aware registration in WebViewClient.onPageFinished; onDestroy clears registry
-- [x] Move capture_test.html to src/debug/assets/
-- [x] Move FakeCaptureProvider to src/test/
-- [x] Create CaptureProviderTest.kt
-- [x] Commit "feat: CaptureProvider abstraction with WebView capture" (commit dc5c7b3)
-- [x] Commit "fix: correct CaptureProvider lifecycle and internal capture wiring" (commit 411c812)
-- [x] Create PHASE2_REPORT.md
-- [x] Run CI for Phase 2 (GREEN: compile + 164 tests + assembleDebug)
-- [x] Write `PHASE2_REPORT.md` (updated)
-- [ ] Runtime smoke test: verify internal WebView capture without MediaProjection (debug harness)
+
+### Phase 1 / baseline
+- [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
+- [x] Phase 1 CI compile/test/assemble/lint checkpoint GREEN
+
+### Phase 2 implementation and CI baseline
+- [x] Define `CaptureProvider` + `CaptureResult`
+- [x] Implement `WebViewCaptureProvider` for project-owned WebView content
+- [x] Add `CaptureProviderRegistry` and WeakReference lifecycle
+- [x] Keep `FakeCaptureProvider` test-only and add Robolectric bitmap tests
+- [x] Add explicit `INTERNAL_PROVIDER` mode and preserve MediaProjection mode
+- [x] Add debug-only `app/src/debug/assets/capture_test.html` harness
+- [x] Phase 2 baseline CI GREEN (`31248721397`, commit `69db963`)
+
+### Runtime corrective checkpoint
+- [x] Perform first runtime smoke test
+- [x] Record runtime issue: fresh internal start can exit/FC while a prior MediaProjection session masks the problem
+- [x] Prepare corrective patch: internal debug start no longer claims MediaProjection foreground-service type
+- [x] Add mixed-session protection
+- [x] Add overlay-permission and provider-readiness guards
+- [x] Make internal debug session Activity-scoped / `START_NOT_STICKY`
+- [x] Fix debug WebView viewport to 1080×1920 physical pixels (no density multiplier)
+- [x] Add MediaStore debug PNG export to `Pictures/ScreenPilotDebug` on API 29+
+- [x] Add unmistakable HTML marker `SP-WEBVIEW-2026-08`
+- [x] Add API-28 test proving no legacy public-storage permission is introduced
+- [ ] Review corrective patch in Git working tree
+- [ ] Push corrective patch and run GitHub Actions
+- [ ] Confirm new CI compile + tests + assembleDebug + lint are GREEN
+- [ ] Runtime smoke from fresh app: internal start without MediaProjection dialog or FC
+- [ ] Tap bubble and confirm `Pictures/ScreenPilotDebug/capture_test_*.png` exists
+- [ ] Confirm PNG contains `SCREENPILOT INTERNAL WEBVIEW TEST` / `SP-WEBVIEW-2026-08`
 - [ ] Mark Phase-2 runtime checkpoint GREEN
 
 ## Phase 3 — Flutter Test Host

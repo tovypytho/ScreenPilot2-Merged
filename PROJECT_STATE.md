@@ -3,45 +3,26 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 2 CI VERIFIED GREEN (compile + 164 tests + assembleDebug all pass). Runtime smoke test harness in progress.**
+**Phase 1 GREEN. Phase 2 CI baseline GREEN at commit `69db963` / run `31248721397`, but runtime smoke exposed an internal-start lifecycle/foreground-service bug. A corrective internal-debug patch is prepared locally and requires a new CI run plus device smoke test. Phase 3 remains blocked.**
 
 ## Completed
-- Backup of pre-Phase-1 MergedProject created.
-- Removed Gradle `sourceSets` references to `../../E-Ujian_RE_JADX`.
-- Returned to standard `app/src/main/{java,res,AndroidManifest.xml}` layout.
-- Aligned namespace/applicationId to `id.eujian.cbt.screenpilot`.
-- Migrated production type references from legacy `com.example.*`.
-- Updated test/androidTest namespaces.
-- Confirmed local ScreenPilot manifest is used.
-- Confirmed JADX evidence remains outside the build.
-- `PHASE1_REPORT.md` created.
-- Added project memory files: `AGENTS.md`, `PROJECT_STATE.md`, `DECISIONS.md`, `TODO.md`.
-- Created `.gitignore` (Gradle/build/local/SDK/secrets ignored; wrapper jar/properties + gradlew + version catalog kept).
-- Audited `.github/workflows/android-build.yml` (compatible with JDK 21 / Gradle 9.3.1 / AGP 9.1.1 / compileSdk 35 / testDebugUnitTest / assembleDebug / artifact upload; risk notes only, not edited).
-- `PRE_CI_REPORT.md` created.
-- Phase 1.6: removed empty internal stub `MergedProject/E-Ujian_RE_JADX/` (reconfirmed 0 files). External evidence `AntiGravityIDE/E-Ujian_RE_JADX` (3,913 files) untouched.
-- Phase 1.6: moved `app/src/androidTest/java/com/example/ExampleInstrumentedTest.kt` → `app/src/androidTest/java/id/eujian/cbt/screenpilot/ExampleInstrumentedTest.kt` (package `id.eujian.cbt.screenpilot`). Removed empty legacy `com/example` directories.
-- Phase 1.6: audited `.gitignore` final contents (no global `*.properties`; wrapper properties/gradlew/catalog kept).
-- Phase 1.6: `FINAL_REPO_CHECK.md` created.
-- Phase 1.7: `git init -b main` — local repository initialized.
-- Phase 1.7: verified `.gitignore` rules via `git check-ignore` — build outputs, secrets, local.properties, .gradle/ all correctly ignored; required build files (gradlew, gradle-wrapper.jar/properties, libs.versions.toml, gradle.properties) correctly trackable.
-- Phase 1.7: staged all 93 files with `git add .`.
-- Phase 1.7: audited staged files for secrets, local.properties, APK/AAB, build outputs, .gradle, JADX/evidence, .class files — all clean.
-- Phase 1.7: committed baseline `8aabf1a` — "chore: establish standalone ScreenPilot baseline".
-- Phase 1.7: `GIT_BASELINE_REPORT.md` created.
+- Standalone Android/Kotlin baseline established and pushed to GitHub.
+- Namespace/applicationId aligned to `id.eujian.cbt.screenpilot`.
+- Phase 1 GitHub Actions compile, unit test, assembleDebug, lint, and artifact upload verified GREEN.
+- Phase 2 `CaptureProvider`, `CaptureResult`, `WebViewCaptureProvider`, and `CaptureProviderRegistry` implemented.
+- Internal provider and MediaProjection are explicit capture-source modes.
+- `FakeCaptureProvider` is test-only; bitmap tests run with Robolectric.
+- Project-owned debug asset is `app/src/debug/assets/capture_test.html`.
+- Phase 2 CI baseline run `31248721397` is GREEN.
+- Runtime debug trigger exists and normal ScreenPilot features were reported working.
 
-## Phase 2 — Capture Abstraction
-- Created `CaptureProvider` interface + `CaptureResult` sealed class in `id.eujian.cbt.screenpilot.capture` package.
-- Implemented `WebViewCaptureProvider` — renders `WebView` content to `Bitmap` via `Canvas` on `Dispatchers.Main.immediate`.
-- Created `CaptureProviderRegistry` — thread-safe object holder for injectable provider lifecycle.
-- Created `FakeCaptureProvider` for unit tests — returns solid-color dummy `Bitmap`.
-- Injected provider via registry into `ScreenCaptureService`; `captureScreen()` uses `CaptureProviderRegistry.get()`; added `CaptureSource` enum + `ACTION_START_INTERNAL_CAPTURE` for provider-only mode (no MediaProjection).
-- Health watcher skips MediaProjection/virtualDisplay/imageReader null checks when `CaptureSource.INTERNAL_PROVIDER`.
-- Created `app/src/debug/assets/capture_test.html` — test-only HTML (heading, radio buttons, checkboxes, table, placeholder).
-- Wired `WebViewCaptureProvider` in `MainActivity.onCreate()` via lifecycle-aware `WebViewClient.onPageFinished`; WebView explicitly measured (1080x1920) for non-zero viewport.
-- Moved `FakeCaptureProvider` from `src/main/` → `src/test/`; added `CaptureProviderTest.kt` unit test.
-- Commit `dc5c7b3` — "feat: CaptureProvider abstraction with WebView capture".
-- Commit `411c812` — "fix: correct CaptureProvider lifecycle and internal capture wiring" (CI fix: registry pattern + WeakReference + internal mode + test relocation).
+## Runtime Finding and Corrective Work
+- Fresh internal-debug start could exit/force-close while starting internal mode after a previously authorized MediaProjection session did not, indicating accidental dependency on the mediaProjection foreground-service path.
+- Corrective patch removes foreground MediaProjection promotion from `ACTION_START_INTERNAL_CAPTURE`; normal `ACTION_START` MediaProjection behavior is retained.
+- Internal debug mode is Activity-scoped, `START_NOT_STICKY`, overlay/provider guarded, and mixed sessions are rejected.
+- Debug WebView viewport is fixed at 1080×1920 physical pixels instead of density-scaled dimensions.
+- Successful internal WebView captures are additionally exported on Android 10+ to `Pictures/ScreenPilotDebug/capture_test_*.png` via MediaStore for direct visual verification.
+- `capture_test.html` includes marker `SP-WEBVIEW-2026-08` to prove the exported image came from the project-owned WebView.
 
 ## Static Verification
 Passed:
@@ -60,18 +41,18 @@ Passed:
 - no local.properties, APK/AAB, .gradle, JADX evidence, or generated files staged
 
 ## Remaining Risk
-No actual CI compile/test/build has yet verified the Phase-2 state. GitHub Actions must compile, test, and assemble the APK.
+The corrective runtime patch has not yet been verified by GitHub Actions or a device. The critical acceptance test is a fresh internal-provider session with no MediaProjection permission/session, followed by a bubble capture that produces `Pictures/ScreenPilotDebug/capture_test_*.png`.
 
 ## Do Not Start Yet
-Until GitHub Actions is green:
+Until the corrective patch is CI GREEN and the runtime smoke test passes:
 - no Flutter test host
 - no MethodChannel bridge
-- no GateProvider work
-- no large storage/API refactor
+- no Phase 3 integration work
+- no broad storage/API refactor
 
 ## Next Milestone
-1. Run GitHub Actions to verify Phase 2 compile + unit tests
-2. Confirm `assembleDebug` succeeds
-3. Start Phase 3 (Flutter test host) only after Phase 2 CI is green
-
-Only after CI is green should the next phase begin.
+1. Copy/review the corrective patch in the Git working tree.
+2. Run GitHub Actions and require compile + unit tests + assembleDebug + lint GREEN.
+3. Install the resulting debug APK.
+4. Verify fresh internal capture works without MediaProjection and exports the marked WebView PNG.
+5. Mark Phase 2 final GREEN only after that runtime evidence exists.

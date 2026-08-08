@@ -36,5 +36,4 @@ Before changing code, read `PROJECT_STATE.md`, `DECISIONS.md`, `TODO.md`, and th
 - Test fakes/mocks must stay test-only and must not reproduce spoofed production identities.
 
 ## Current Checkpoint
-Phase 1 static verification is complete.
-Next checkpoint: GitHub Actions must compile, test, and assemble the standalone APK before Phase 2.
+Phase 1 is GREEN. Phase 2 baseline CI is GREEN, but runtime smoke testing exposed an internal-debug startup issue. The current checkpoint is to verify the corrective internal-provider patch in GitHub Actions and then prove on-device that a fresh internal session starts without MediaProjection and exports the marked project-owned WebView image to `Pictures/ScreenPilotDebug`. Do not begin Phase 3 before that checkpoint is GREEN.

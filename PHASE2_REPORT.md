@@ -1,125 +1,107 @@
 # PHASE2_REPORT.md — Capture Abstraction
 
 **Date:** 2026-08-08
-**Phase:** Phase 2 — Capture Abstraction (CI GREEN, runtime smoke test pending)
-**Commit:** `dc5c7b3` (initial) → `411c812` (lifecycle fix) → `8e32b6a` (test runner fix)
+**Phase:** Phase 2 — Capture Abstraction
+**Status:** CI baseline GREEN; runtime corrective patch prepared; final runtime checkpoint PENDING
 
-### CI Status
-- `compileDebugKotlin`: SUCCESS
-- `testDebugUnitTest`: SUCCESS (164 tests, 0 failures)
-- `assembleDebug`: SUCCESS
+## 1. Verified Baseline
 
----
+GitHub Actions run `31248721397` for commit `69db963` completed successfully:
 
-## 1. Objective
+- `compileDebugKotlin`: PASS
+- `testDebugUnitTest`: PASS
+- `assembleDebug`: PASS
+- `lintDebug`: PASS
+- debug APK artifact: PASS
 
-Make ScreenPilot capable of capturing internal WebView content for analysis **without requiring MediaProjection**. Introduce a `CaptureProvider` abstraction so capture sources are injectable and testable.
+The runtime smoke test then exposed behavior that CI cannot detect:
 
-## 2. Changes Made
+- debug trigger is visible and the normal ScreenPilot feature set works;
+- starting internal mode from a fresh app can cause the app/process to exit;
+- starting internal mode after a MediaProjection session is already active does not reproduce that failure, which indicates accidental coupling to the MediaProjection foreground-service path;
+- the debug button itself only starts internal mode; the floating bubble remains the actual capture trigger.
 
-### 2.1 New Package: `id.eujian.cbt.screenpilot.capture`
-- **`CaptureProvider.kt`** — Defines `CaptureResult` sealed class and `CaptureProvider` interface.
-  - `CaptureResult`: `Success(Bitmap)`, `Denied`, `Error(message)`
-  - `interface CaptureProvider { suspend fun capture(): CaptureResult }`
+Therefore Phase 2 is **not final GREEN yet**.
 
-- **`WebViewCaptureProvider.kt`** — Implements `CaptureProvider`.
-  - Constructor takes a `WebView`.
-  - `capture()` runs on `Dispatchers.Main.immediate`.
-  - Checks `webView.width > 0 && height > 0` before rendering.
-  - Creates an `ARGB_8888` bitmap, draws via `Canvas(webView.draw(canvas))`.
-  - Returns `Success(bitmap)` or `Error(message)`.
+## 2. Architecture Already Present
 
-- **`FakeCaptureProvider.kt`** — For unit tests.
-  - Returns a solid-color dummy `Bitmap`.
-  - Configurable width/height/color.
-  - Runs on `Dispatchers.Default`.
+- `CaptureProvider` + sealed `CaptureResult`.
+- `WebViewCaptureProvider` using `WeakReference<WebView>` and `Dispatchers.Main.immediate`.
+- `CaptureProviderRegistry` for provider injection without holding an Activity directly.
+- explicit capture source modes: `MEDIA_PROJECTION` and `INTERNAL_PROVIDER`.
+- `ACTION_START_INTERNAL_CAPTURE` for project-owned test content.
+- MediaProjection health checks are skipped when the source is `INTERNAL_PROVIDER`.
+- `FakeCaptureProvider` is test-only under `src/test`.
+- `capture_test.html` is debug-only under `app/src/debug/assets/`.
 
-### 2.2 ScreenCaptureService.kt (modified)
-- Added `import id.eujian.cbt.screenpilot.capture.CaptureProvider` and `CaptureResult`.
-- Added `var captureProvider: CaptureProvider? = null` — externally injectable.
-- Modified `captureScreen()`:
-  - If `captureProvider != null`, delegates to the provider.
-  - Returns `Bitmap` from `Success`, logs and returns `null` for `Denied`/`Error`.
-  - If `captureProvider == null`, falls back to the existing MediaProjection path.
+## 3. Runtime Corrective Patch Prepared in This Revision
 
-### 2.3 MainActivity.kt (modified)
-- Added imports: `android.webkit.WebView`, `WebViewCaptureProvider`, `ScreenCaptureService`.
-- In `onCreate()`, created a `WebView(this)`, disabled JavaScript, loaded `file:///android_asset/capture_test.html`, and set `ScreenCaptureService.captureProvider = WebViewCaptureProvider(captureWebView)`.
+### 3.1 Internal mode is decoupled from MediaProjection foreground service
 
-### 2.4 Assets
-- Created `app/src/main/assets/capture_test.html` — project-owned test HTML with:
-  - Heading and paragraphs
-  - Radio button options (single answer)
-  - Checkbox options (multi-select)
-  - Table with topic/level data
-  - Placeholder image
-  - No external resources (offline-safe)
+`ACTION_START_INTERNAL_CAPTURE` no longer promotes the service with `FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION`. The debug Activity starts this explicit service with `startService()` and the internal branch returns `START_NOT_STICKY`. It does not initialize MediaProjection, VirtualDisplay, or ImageReader.
 
-## 3. Static Verification
+Normal `ACTION_START` continues to use the existing MediaProjection foreground-service path.
 
-- [x] `CaptureProvider` interface has suspend `capture(): CaptureResult`
-- [x] `CaptureResult` is a sealed class with `Success`, `Denied`, `Error`
-- [x] `WebViewCaptureProvider` uses `Dispatchers.Main.immediate`
-- [x] `WebViewCaptureProvider` checks width/height > 0
-- [x] `ScreenCaptureService.captureProvider` is injectable (`var`, nullable)
-- [x] Fallback to MediaProjection when provider is null
-- [x] HTML asset is project-owned, no external URLs
-- [x] No refactor of `MainActivity` or `ScreenCaptureService` beyond provider injection
-- [x] compileSdk/targetSdk unchanged (35)
-- [x] No dependency changes
-- [x] AndroidManifest permissions unchanged (INTERNET already present)
+### 3.2 Mixed-session protection
 
-## 4. Commit History
+The debug trigger refuses to start while normal ScreenPilot capture is active. The service also rejects an internal start if another capture session is already active, and rejects MediaProjection activation while an internal debug session is active.
 
-```
-dc5c7b3 feat: CaptureProvider abstraction with WebView capture
-8208694 fix: align AndroidX Core with compileSdk 35
-815bbf7 fix: resolve migrated package references in UI code
-843c5b4 docs: update project state and TODO for git baseline
-8aabf1a chore: establish standalone ScreenPilot baseline
-```
+### 3.3 Overlay/provider readiness guards
 
-## 5. CI Fix — Lifecycle Correction (commit `411c812`)
+The Activity checks overlay permission and provider readiness before starting internal mode. The service repeats those checks defensively.
 
-**Error:** `MainActivity.kt:156:30 — Unresolved reference 'captureProvider'`
-**Root cause:** `captureProvider` was an instance property on `ScreenCaptureService`, accessed as `ScreenCaptureService.captureProvider` (static-like access on an instance var).
+### 3.4 Activity-scoped lifecycle
 
-### Changes applied (no large refactor):
+The internal provider owns a MainActivity WebView. The Activity stops an internal debug service during destruction, clears the provider registry, and destroys the WebView. The service records that Activity-scoped shutdown as graceful and also stops internal mode if the Activity task is removed. Normal MediaProjection behavior is not intentionally changed.
 
-#### 5.1 CaptureProviderRegistry
-- New `object CaptureProviderRegistry` — thread-safe holder with `@Volatile` backing field.
-- `set(provider)`, `get()`, `clear()` — stores only `CaptureProvider?`, never `Activity`/`WebView` directly.
+### 3.5 Deterministic WebView viewport
 
-#### 5.2 WebViewCaptureProvider
-- Uses `WeakReference(webView)` instead of strong reference — avoids leaks.
-- `capture()` unchanged behavior: `withContext(Dispatchers.Main.immediate)`, width/height check, `Canvas`/`draw`.
+The debug WebView now uses a fixed **1080×1920 physical-pixel** viewport. It is no longer multiplied by display density, avoiding extremely large bitmaps on xxhdpi/xxxhdpi devices. Provider registration is deferred with `WebView.post { ... }` after `onPageFinished`, and the debug WebView uses a software layer to make direct `WebView.draw(Canvas)` verification more deterministic.
 
-#### 5.3 ScreenCaptureService
-- Removed `var captureProvider: CaptureProvider?`.
-- Import changed: `CaptureProvider` → `CaptureProviderRegistry`.
-- `captureScreen()`: now calls `CaptureProviderRegistry.get()`; for `INTERNAL_PROVIDER` source, no fallback to MediaProjection on failure.
-- Added `CaptureSource` enum: `MEDIA_PROJECTION`, `INTERNAL_PROVIDER`.
-- Added `ACTION_START_INTERNAL_CAPTURE` — starts foreground + floating button, sets `isServiceActive=true`, does NOT call `initializeMediaProjection()`.
-- `currentCaptureSource` defaults to `MEDIA_PROJECTION` (existing behavior preserved).
+### 3.6 Visual verification export
 
-#### 5.4 Health Watcher
-- `runHealthCheck()`: MediaProjection/virtualDisplay/imageReader null checks only run when `currentCaptureSource == MEDIA_PROJECTION`. INTERNAL mode skips these (they are legitimately null).
+A successful `INTERNAL_PROVIDER` capture exports an additional PNG through scoped-storage MediaStore to:
 
-#### 5.5 MainActivity
-- Removed `ScreenCaptureService.captureProvider = ...` (compile error).
-- Uses `CaptureProviderRegistry.set(WebViewCaptureProvider(wv))` in `WebViewClient.onPageFinished()`.
-- Added `onDestroy()` → `CaptureProviderRegistry.clear()` + `webView.destroy()`.
+`Pictures/ScreenPilotDebug/capture_test_yyyyMMdd_HHmmss_SSS.png`
 
-#### 5.6 WebView Viewport
-- `WebView` is not attached to Compose hierarchy → uses explicit `measure()`/`layout()` with fixed 1080×1920 (density-adjusted) viewport → guarantees non-zero dimensions.
+On a typical device this appears under:
 
-#### 5.7 Asset & Test Relocation
-- `capture_test.html` moved from `src/main/assets/` → `src/debug/assets/` (test harness only).
-- `FakeCaptureProvider` moved from `src/main/` → `src/test/` (test-only).
-- Added `CaptureProviderTest.kt` — verifies `FakeCaptureProvider` returns `Success` with correct dimensions (default and custom).
+`/storage/emulated/0/Pictures/ScreenPilotDebug/`
 
-## 6. Next Steps
+Properties:
 
-- [x] Run CI to verify compile + tests (GREEN)
-- [ ] Runtime smoke: verify internal WebView capture works without MediaProjection (debug harness)
-- [ ] Only after CI green: start Phase 3 (Flutter test host)
+- Android 10+ only for this public debug export;
+- no `MANAGE_EXTERNAL_STORAGE`;
+- no new broad storage permission;
+- source bitmap is the result of `webView.draw(Canvas)`, not a display screenshot;
+- export is only executed for the internal debug provider; normal MediaProjection screenshots are not duplicated here;
+- success/failure is logged and surfaced with a Toast;
+- API 28 returns a non-fatal unsupported result rather than adding legacy storage permission.
+
+The test HTML now contains a prominent marker: `SP-WEBVIEW-2026-08`, making it easy to distinguish a true WebView-provider capture from a screen screenshot.
+
+## 4. Files Changed by the Corrective Revision
+
+- `app/src/main/java/id/eujian/cbt/screenpilot/MainActivity.kt`
+- `app/src/main/java/id/eujian/cbt/screenpilot/service/ScreenCaptureService.kt`
+- `app/src/main/java/id/eujian/cbt/screenpilot/capture/DebugCaptureExporter.kt` (new)
+- `app/src/debug/assets/capture_test.html`
+- `app/src/test/java/id/eujian/cbt/screenpilot/capture/DebugCaptureExporterTest.kt` (new)
+- project state/decision/TODO/handoff documentation
+
+## 5. Required Verification
+
+Do not build locally unless explicitly authorized by project rules. After these files are copied into the working repository:
+
+1. inspect `git diff --check`, `git status --short`, and `git diff`;
+2. run GitHub Actions;
+3. only after CI is GREEN, install the new debug APK;
+4. fresh-open the app without activating normal ScreenPilot;
+5. press `Debug: Start Internal Capture`;
+6. confirm there is no MediaProjection consent dialog and no force-close;
+7. confirm the floating bubble appears;
+8. tap the bubble once;
+9. open `Pictures/ScreenPilotDebug`;
+10. verify a `capture_test_*.png` exists and visibly contains `SCREENPILOT INTERNAL WEBVIEW TEST` and `SP-WEBVIEW-2026-08`.
+
+Only then mark the Phase-2 runtime checkpoint GREEN and consider Phase 3.

@@ -21,6 +21,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
+import android.provider.Settings
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
@@ -29,6 +30,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,9 +74,11 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import id.eujian.cbt.screenpilot.BuildConfig
 import id.eujian.cbt.screenpilot.MainActivity
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.capture.CaptureResult
+import id.eujian.cbt.screenpilot.capture.DebugCaptureExporter
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
 import id.eujian.cbt.screenpilot.data.HistoryRepository
@@ -136,6 +140,7 @@ class ScreenCaptureService : Service() {
         const val EXTRA_RESULT_DATA = "extra_result_data"
 
         val isServiceActive = MutableStateFlow(false)
+        val isInternalCaptureActive = MutableStateFlow(false)
         val lastError = MutableStateFlow<String?>(null)
         val isLocating = MutableStateFlow(false)
         const val ACTION_CANCEL_STAGED = "com.example.action.CANCEL_STAGED"
@@ -547,7 +552,35 @@ class ScreenCaptureService : Service() {
         }
 
         if (action == ACTION_START_INTERNAL_CAPTURE) {
+            if (!BuildConfig.DEBUG) {
+                Log.w(TAG, "Ignoring internal capture start outside a debug build")
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            if (isServiceActive.value || isInternalCaptureActive.value) {
+                Log.w(TAG, "Ignoring internal capture start because another capture session is active")
+                lastError.value = "Stop ScreenPilot before starting internal debug capture"
+                return START_NOT_STICKY
+            }
+            if (!Settings.canDrawOverlays(this)) {
+                Log.w(TAG, "Internal capture start rejected: overlay permission is missing")
+                lastError.value = "Overlay permission required for debug capture"
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            if (CaptureProviderRegistry.get() == null) {
+                Log.w(TAG, "Internal capture start rejected: CaptureProvider is not ready")
+                lastError.value = "Internal test page is not ready"
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+
             currentCaptureSource = CaptureSource.INTERNAL_PROVIDER
+            isInternalCaptureActive.value = true
+            isServiceActive.value = true
+            lastError.value = null
+            Log.d(TAG, "Internal capture session started without MediaProjection")
+
             serviceScope.launch {
                 val sessionId = java.util.UUID.randomUUID().toString()
                 preferencesRepository.updateSessionId(sessionId)
@@ -558,28 +591,28 @@ class ScreenCaptureService : Service() {
                 preferencesRepository.updateSessionForegroundPromoted(false)
                 preferencesRepository.updateSessionProjectionInitialized(false)
                 preferencesRepository.updateSessionFloatingCreated(false)
-                preferencesRepository.updateSessionLastActionStage("STARTING")
+                preferencesRepository.updateSessionLastActionStage("STARTING_INTERNAL_PROVIDER")
                 preferencesRepository.updateSessionLastHealthyTime(System.currentTimeMillis())
-            }
 
-            startForegroundWithNotification()
-            serviceScope.launch {
-                preferencesRepository.updateSessionForegroundPromoted(true)
-                preferencesRepository.updateSessionProjectionInitialized(false)
+                // Deliberately do NOT call startForegroundWithNotification().
+                // The internal debug provider has no MediaProjection grant and
+                // must not claim FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION.
                 showFloatingButton()
                 preferencesRepository.updateSessionFloatingCreated(true)
-                isServiceActive.value = true
-                lastError.value = null
-
-                preferencesRepository.updateSessionLastActionStage("RUNNING")
+                preferencesRepository.updateSessionLastActionStage("RUNNING_INTERNAL_PROVIDER")
                 preferencesRepository.updateSessionLastHealthyTime(System.currentTimeMillis())
-
                 startSessionHealthWatcher()
             }
-            return START_STICKY
+            return START_NOT_STICKY
         }
 
         if (action == ACTION_START) {
+            if (isInternalCaptureActive.value) {
+                Log.w(TAG, "Ignoring MediaProjection start while internal debug capture is active")
+                lastError.value = "Stop internal debug capture before activating ScreenPilot"
+                return START_NOT_STICKY
+            }
+            currentCaptureSource = CaptureSource.MEDIA_PROJECTION
             val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1)
             val resultData = intent.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
 
@@ -2082,6 +2115,42 @@ class ScreenCaptureService : Service() {
         }
     }
 
+    private suspend fun exportInternalDebugCapture(bitmap: Bitmap) {
+        if (!BuildConfig.DEBUG) return
+
+        when (val export = DebugCaptureExporter.savePng(applicationContext, bitmap)) {
+            is DebugCaptureExporter.Result.Success -> {
+                Log.d(
+                    TAG,
+                    "Internal WebView capture exported: ${export.uri} (${export.displayName})"
+                )
+                withContext(Dispatchers.Main.immediate) {
+                    Toast.makeText(
+                        applicationContext,
+                        "Debug capture saved to Pictures/ScreenPilotDebug",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+            DebugCaptureExporter.Result.UnsupportedApi -> {
+                Log.w(
+                    TAG,
+                    "Debug public export skipped on API ${Build.VERSION.SDK_INT}; Android 10+ is required without legacy storage permission"
+                )
+            }
+            is DebugCaptureExporter.Result.Failure -> {
+                Log.e(TAG, "Internal WebView debug export failed: ${export.message}")
+                withContext(Dispatchers.Main.immediate) {
+                    Toast.makeText(
+                        applicationContext,
+                        "Debug capture export failed — see ScreenCaptureService log",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
     private suspend fun captureScreen(): Bitmap? {
         val source = currentCaptureSource
         val provider = CaptureProviderRegistry.get()
@@ -2092,8 +2161,11 @@ class ScreenCaptureService : Service() {
             }
             return when (val result = provider.capture()) {
                 is CaptureResult.Success -> {
+                    val bitmap = result.bitmap
                     lastCapturePurpose = "WEBVIEW_CAPTURE"
-                    result.bitmap
+                    Log.d(TAG, "Internal WebView capture success: ${bitmap.width}x${bitmap.height}")
+                    exportInternalDebugCapture(bitmap)
+                    bitmap
                 }
                 is CaptureResult.Denied -> {
                     Log.w(TAG, "CaptureProvider denied capture")
@@ -2763,6 +2835,7 @@ class ScreenCaptureService : Service() {
 
         ProviderGateway.cancelActiveCall()
         isServiceActive.value = false
+        isInternalCaptureActive.value = false
         locateJob?.cancel()
         isLocating.value = false
         healthWatcherJob?.cancel()
@@ -2781,6 +2854,7 @@ class ScreenCaptureService : Service() {
 
         mediaProjection?.stop()
         mediaProjection = null
+        currentCaptureSource = CaptureSource.MEDIA_PROJECTION
 
         floatingLifecycleOwner.stop()
         answerLifecycleOwner.stop()
@@ -2795,9 +2869,16 @@ class ScreenCaptureService : Service() {
     }
 
     override fun onDestroy() {
-        val graceful = shutdownInProgress.get()
-        val finalReason = terminalShutdownReason
-            ?: if (graceful) "SERVICE_STOPPED" else "SERVICE_DESTROYED_UNEXPECTED"
+        val internalActivityScopedShutdown =
+            currentCaptureSource == CaptureSource.INTERNAL_PROVIDER &&
+                isInternalCaptureActive.value &&
+                !shutdownInProgress.get()
+        val graceful = shutdownInProgress.get() || internalActivityScopedShutdown
+        val finalReason = terminalShutdownReason ?: when {
+            internalActivityScopedShutdown -> "INTERNAL_ACTIVITY_DESTROYED"
+            graceful -> "SERVICE_STOPPED"
+            else -> "SERVICE_DESTROYED_UNEXPECTED"
+        }
         writeShutdownJournal(graceful, finalReason)
         performCleanup("SERVICE_DESTROYED")
         serviceScope.cancel()
@@ -2810,6 +2891,12 @@ class ScreenCaptureService : Service() {
         serviceScope.launch {
             preferencesRepository.updateSessionLastActionStage("ACTIVITY_TASK_REMOVED")
             preferencesRepository.updateSessionLastHealthyTime(System.currentTimeMillis())
+        }
+        if (currentCaptureSource == CaptureSource.INTERNAL_PROVIDER) {
+            // The provider owns a MainActivity WebView, so the debug session cannot
+            // remain valid after its task is removed. Normal MediaProjection mode
+            // intentionally preserves the existing behavior.
+            requestServiceStop("INTERNAL_ACTIVITY_TASK_REMOVED")
         }
     }
 

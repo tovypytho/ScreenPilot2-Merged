@@ -152,19 +152,24 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
 
     private var captureWebView: WebView? = null
+    private var internalDebugSessionStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         if (BuildConfig.DEBUG) {
-            val density = resources.displayMetrics.density
-            val vpWidth = (1080 * density).toInt()
-            val vpHeight = (1920 * density).toInt()
+            // Keep this viewport in physical pixels. The previous density-scaled
+            // 1080×1920 viewport could become several thousand pixels wide/high
+            // on xxhdpi/xxxhdpi devices and allocate very large capture bitmaps.
+            val vpWidth = 1080
+            val vpHeight = 1920
 
             captureWebView = WebView(this).apply {
                 settings.javaScriptEnabled = false
-                webViewClient = WebViewClient()
+                // A software layer makes direct WebView.draw(Canvas) verification
+                // deterministic for this debug-only, off-screen test surface.
+                setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 setWebChromeClient(WebChromeClient())
 
                 measure(
@@ -174,10 +179,14 @@ class MainActivity : ComponentActivity() {
                 layout(0, 0, vpWidth, vpHeight)
 
                 webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
-                        val wv = captureWebView
-                        if (wv != null && wv.width > 0 && wv.height > 0) {
-                            CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        val wv = view ?: captureWebView ?: return
+                        // Defer provider registration until WebView has processed the
+                        // page-finished callback and a deterministic viewport exists.
+                        wv.post {
+                            if (!isFinishing && !isDestroyed && wv.width > 0 && wv.height > 0) {
+                                CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                            }
                         }
                     }
                 }
@@ -197,13 +206,58 @@ class MainActivity : ComponentActivity() {
                                 .padding(16.dp)
                         ) {
                             Button(onClick = {
-                                val intent = Intent(this@MainActivity, ScreenCaptureService::class.java).apply {
-                                    action = ScreenCaptureService.ACTION_START_INTERNAL_CAPTURE
-                                }
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    startForegroundService(intent)
-                                } else {
-                                    startService(intent)
+                                when {
+                                    internalDebugSessionStarted || ScreenCaptureService.isInternalCaptureActive.value -> {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Internal capture is already active — tap the bubble to capture",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    ScreenCaptureService.isServiceActive.value -> {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Stop ScreenPilot before starting internal debug capture",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                    !Settings.canDrawOverlays(this@MainActivity) -> {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Overlay permission required for debug capture",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                    CaptureProviderRegistry.get() == null -> {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Internal test page is still loading — try again in a moment",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    else -> {
+                                        val intent = Intent(this@MainActivity, ScreenCaptureService::class.java).apply {
+                                            action = ScreenCaptureService.ACTION_START_INTERNAL_CAPTURE
+                                        }
+                                        try {
+                                            // Internal capture is Activity-scoped and deliberately
+                                            // is not a mediaProjection foreground service.
+                                            startService(intent)
+                                            internalDebugSessionStarted = true
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Internal capture ready — tap bubble to capture. Output: Pictures/ScreenPilotDebug",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        } catch (e: Exception) {
+                                            internalDebugSessionStarted = false
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                "Failed to start internal capture: ${e.message ?: e.javaClass.simpleName}",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    }
                                 }
                             }) {
                                 Text("Debug: Start Internal Capture", fontSize = 10.sp)
@@ -216,7 +270,23 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        // The internal debug session owns an Activity-backed WebView, so it must
+        // not outlive the Activity. Normal MediaProjection sessions are left alone.
+        if (BuildConfig.DEBUG &&
+            (internalDebugSessionStarted || ScreenCaptureService.isInternalCaptureActive.value)
+        ) {
+            try {
+                stopService(Intent(this, ScreenCaptureService::class.java))
+            } catch (_: Exception) {
+                // Service cleanup is best-effort during Activity destruction.
+            }
+            internalDebugSessionStarted = false
+        }
+
         CaptureProviderRegistry.clear()
+        captureWebView?.stopLoading()
+        captureWebView?.loadUrl("about:blank")
+        captureWebView?.removeAllViews()
         captureWebView?.destroy()
         captureWebView = null
         super.onDestroy()
