@@ -16,7 +16,13 @@ Accepted. Primary build environment is GitHub Actions using JDK 21, Gradle 9.3.1
 Accepted. Do not start a later phase until the previous phase is reviewed and CI is green.
 
 ## D006 — Capture abstraction
-Planned for Phase 2. ScreenPilot capture logic should depend on a `CaptureProvider` abstraction and initially operate only on project-owned/allowed test content.
+Accepted. ScreenPilot capture logic depends on a `CaptureProvider` abstraction. Initially operates only on project-owned/allowed test content via a project-owned WebView loading local HTML assets. MediaProjection remains as the fallback path when no provider is injected.
+
+## D006a — WebView capture provider
+Accepted. `WebViewCaptureProvider` implements `CaptureProvider` by rendering a `WebView`'s content via `Canvas`/bitmap. Uses `Dispatchers.Main.immediate` for UI-thread-safe `webView.draw()`. Project-owned HTML asset (`capture_test.html`) serves as the test surface.
+
+## D006b — Fake capture provider
+Accepted. `FakeCaptureProvider` returns a solid-color dummy `Bitmap` for unit testing without real rendering. Test-only convenience, not used in production.
 
 ## D007 — Flutter integration starts with a test host
 Planned for Phase 3. Prove Flutter↔Kotlin communication with a small test host before any larger authorized integration.

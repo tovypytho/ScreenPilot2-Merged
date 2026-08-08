@@ -1,6 +1,6 @@
 # TODO.md — Project Roadmap
 
-## Current: Git Baseline (Phase 1.7)
+## Current: Phase 2 — Capture Abstraction
 - [x] Backup pre-Phase-1 MergedProject
 - [x] Remove `../../E-Ujian_RE_JADX` Gradle sourceSets
 - [x] Align namespace/applicationId
@@ -28,24 +28,19 @@
 - [x] Update PROJECT_STATE.md
 - [x] Update TODO.md
 - [x] Create `GIT_BASELINE_REPORT.md`
-- [ ] Push Phase-1 baseline to GitHub (after explicit instruction)
-- [ ] Run GitHub Actions
-- [ ] Fix compile errors if any
-- [ ] Fix unit-test errors if any
-- [ ] Confirm `assembleDebug` succeeds
-- [ ] Download/test standalone APK
-- [ ] Mark Phase-1 CI checkpoint GREEN
-
-## Phase 2 — Capture Abstraction
-Start only after Phase-1 CI is green.
-- [ ] Define `CaptureProvider`
-- [ ] Define `CaptureResult`
-- [ ] Add project-owned dummy WebView page
-- [ ] Implement allowed test WebView capture provider
-- [ ] Add fake provider for unit tests
-- [ ] Route analysis pipeline through abstraction
-- [ ] Add tests
-- [ ] Run CI
+- [x] Push Phase-1 baseline to GitHub
+- [x] CI #1: compile OK (2 fixes: package refs, coreKtx version)
+- [x] Mark Phase-1 CI checkpoint GREEN
+- [x] Define `CaptureProvider` interface + `CaptureResult` sealed class
+- [x] Implement `WebViewCaptureProvider` (WebView → Bitmap via Canvas)
+- [x] Create `FakeCaptureProvider` for unit tests
+- [x] Create `app/src/main/assets/capture_test.html`
+- [x] Wire `WebViewCaptureProvider` in `MainActivity.onCreate()`
+- [x] Inject `captureProvider` into `ScreenCaptureService`; fallback to MediaProjection if null
+- [x] Commit "feat: CaptureProvider abstraction with WebView capture" (commit dc5c7b3)
+- [ ] Route analysis pipeline through CaptureProvider abstraction
+- [ ] Add tests for CaptureProvider / WebViewCaptureProvider / FakeCaptureProvider
+- [ ] Run CI for Phase 2
 - [ ] Write `PHASE2_REPORT.md`
 
 ## Phase 3 — Flutter Test Host

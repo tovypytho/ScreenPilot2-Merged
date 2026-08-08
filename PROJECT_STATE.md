@@ -3,7 +3,7 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 1.7 (Git baseline) complete. Local Git repository initialized with standalone ScreenPilot baseline committed.**
+**Phase 1 CI verified GREEN. Phase 2 (Capture Abstraction) started — CaptureProvider abstraction in place.**
 
 ## Completed
 - Backup of pre-Phase-1 MergedProject created.
@@ -30,6 +30,15 @@ Last updated: 2026-08-08
 - Phase 1.7: committed baseline `8aabf1a` — "chore: establish standalone ScreenPilot baseline".
 - Phase 1.7: `GIT_BASELINE_REPORT.md` created.
 
+## Phase 2 — Capture Abstraction
+- Created `CaptureProvider` interface + `CaptureResult` sealed class in `id.eujian.cbt.screenpilot.capture` package.
+- Implemented `WebViewCaptureProvider` — renders `WebView` content to `Bitmap` via `Canvas` on `Dispatchers.Main.immediate`.
+- Created `FakeCaptureProvider` for unit tests — returns solid-color dummy `Bitmap`.
+- Injected `captureProvider: CaptureProvider?` into `ScreenCaptureService`; `captureScreen()` uses provider if set, falls back to MediaProjection path if null.
+- Created `app/src/main/assets/capture_test.html` — project-owned test HTML (heading, radio buttons, checkboxes, table, placeholder image).
+- Wired `WebViewCaptureProvider` in `MainActivity.onCreate()` loading the local HTML asset.
+- Commit `dc5c7b3` — "feat: CaptureProvider abstraction with WebView capture".
+
 ## Static Verification
 Passed:
 - no `../../` build dependency
@@ -51,20 +60,14 @@ No actual CI compile/test/build has yet verified the Phase-1 state. GitHub Actio
 
 ## Do Not Start Yet
 Until GitHub Actions is green:
-- no CaptureProvider
-- no dummy WebView capture implementation
 - no Flutter test host
 - no MethodChannel bridge
 - no GateProvider work
 - no large storage/API refactor
 
 ## Next Milestone
-1. Push Phase-1 baseline to GitHub (after explicit instruction)
-2. Run GitHub Actions
-3. Fix compile errors if any
-4. Fix unit-test errors if any
-5. Confirm `assembleDebug` succeeds
-6. Download/test standalone APK
-7. Mark Phase-1 CI checkpoint GREEN
+1. Run GitHub Actions to verify Phase 2 compile + unit tests
+2. Confirm `assembleDebug` succeeds
+3. Start Phase 3 (Flutter test host) only after Phase 2 CI is green
 
-Only after CI is green should Phase 2 begin.
+Only after CI is green should the next phase begin.
