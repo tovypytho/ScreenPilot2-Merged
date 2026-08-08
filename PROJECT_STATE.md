@@ -3,7 +3,7 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 1 CI verified GREEN. Phase 2 (Capture Abstraction) started — CaptureProvider abstraction in place.**
+**Phase 1 CI verified GREEN. Phase 2 (Capture Abstraction) in progress — CaptureProvider, WebViewCaptureProvider, registry, internal capture mode, and unit tests implemented.**
 
 ## Completed
 - Backup of pre-Phase-1 MergedProject created.
@@ -33,11 +33,15 @@ Last updated: 2026-08-08
 ## Phase 2 — Capture Abstraction
 - Created `CaptureProvider` interface + `CaptureResult` sealed class in `id.eujian.cbt.screenpilot.capture` package.
 - Implemented `WebViewCaptureProvider` — renders `WebView` content to `Bitmap` via `Canvas` on `Dispatchers.Main.immediate`.
+- Created `CaptureProviderRegistry` — thread-safe object holder for injectable provider lifecycle.
 - Created `FakeCaptureProvider` for unit tests — returns solid-color dummy `Bitmap`.
-- Injected `captureProvider: CaptureProvider?` into `ScreenCaptureService`; `captureScreen()` uses provider if set, falls back to MediaProjection path if null.
-- Created `app/src/main/assets/capture_test.html` — project-owned test HTML (heading, radio buttons, checkboxes, table, placeholder image).
-- Wired `WebViewCaptureProvider` in `MainActivity.onCreate()` loading the local HTML asset.
+- Injected provider via registry into `ScreenCaptureService`; `captureScreen()` uses `CaptureProviderRegistry.get()`; added `CaptureSource` enum + `ACTION_START_INTERNAL_CAPTURE` for provider-only mode (no MediaProjection).
+- Health watcher skips MediaProjection/virtualDisplay/imageReader null checks when `CaptureSource.INTERNAL_PROVIDER`.
+- Created `app/src/debug/assets/capture_test.html` — test-only HTML (heading, radio buttons, checkboxes, table, placeholder).
+- Wired `WebViewCaptureProvider` in `MainActivity.onCreate()` via lifecycle-aware `WebViewClient.onPageFinished`; WebView explicitly measured (1080x1920) for non-zero viewport.
+- Moved `FakeCaptureProvider` from `src/main/` → `src/test/`; added `CaptureProviderTest.kt` unit test.
 - Commit `dc5c7b3` — "feat: CaptureProvider abstraction with WebView capture".
+- Commit `411c812` — "fix: correct CaptureProvider lifecycle and internal capture wiring" (CI fix: registry pattern + WeakReference + internal mode + test relocation).
 
 ## Static Verification
 Passed:
@@ -56,7 +60,7 @@ Passed:
 - no local.properties, APK/AAB, .gradle, JADX evidence, or generated files staged
 
 ## Remaining Risk
-No actual CI compile/test/build has yet verified the Phase-1 state. GitHub Actions must compile, test, and assemble the APK before Phase 2.
+No actual CI compile/test/build has yet verified the Phase-2 state. GitHub Actions must compile, test, and assemble the APK.
 
 ## Do Not Start Yet
 Until GitHub Actions is green:

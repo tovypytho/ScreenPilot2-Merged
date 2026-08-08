@@ -36,12 +36,21 @@
 - [x] Create `FakeCaptureProvider` for unit tests
 - [x] Create `app/src/main/assets/capture_test.html`
 - [x] Wire `WebViewCaptureProvider` in `MainActivity.onCreate()`
-- [x] Inject `captureProvider` into `ScreenCaptureService`; fallback to MediaProjection if null
+- [x] Inject captureProvider via registry into ScreenCaptureService; fallback to MediaProjection for MEDIA_PROJECTION source only
+- [x] Add CaptureSource enum + ACTION_START_INTERNAL_CAPTURE (no MediaProjection for internal mode)
+- [x] Health watcher skips MediaProjection checks in INTERNAL_PROVIDER mode
+- [x] Create CaptureProviderRegistry (thread-safe provider holder)
+- [x] WebViewCaptureProvider uses WeakReference
+- [x] WebView viewport: explicit measure/layout (1080x1920) in MainActivity
+- [x] Lifecycle-aware registration in WebViewClient.onPageFinished; onDestroy clears registry
+- [x] Move capture_test.html to src/debug/assets/
+- [x] Move FakeCaptureProvider to src/test/
+- [x] Create CaptureProviderTest.kt
 - [x] Commit "feat: CaptureProvider abstraction with WebView capture" (commit dc5c7b3)
-- [ ] Route analysis pipeline through CaptureProvider abstraction
-- [ ] Add tests for CaptureProvider / WebViewCaptureProvider / FakeCaptureProvider
+- [x] Commit "fix: correct CaptureProvider lifecycle and internal capture wiring" (commit 411c812)
+- [x] Create PHASE2_REPORT.md
 - [ ] Run CI for Phase 2
-- [ ] Write `PHASE2_REPORT.md`
+- [ ] Write `PHASE2_REPORT.md` (updated)
 
 ## Phase 3 — Flutter Test Host
 Start only after Phase 2 is green.

@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-08
 **Phase:** Phase 2 — Capture Abstraction (in progress)
-**Commit:** `dc5c7b3`
+**Commit:** `dc5c7b3` (initial) → `411c812` (lifecycle fix)
 
 ---
 
@@ -74,9 +74,46 @@ dc5c7b3 feat: CaptureProvider abstraction with WebView capture
 8aabf1a chore: establish standalone ScreenPilot baseline
 ```
 
-## 5. Next Steps
+## 5. CI Fix — Lifecycle Correction (commit `411c812`)
 
-- [ ] Add unit tests for `CaptureProvider` / `WebViewCaptureProvider` / `FakeCaptureProvider`
-- [ ] Route capture pipeline through the abstraction in key call sites
-- [ ] Run CI to verify compile + test
+**Error:** `MainActivity.kt:156:30 — Unresolved reference 'captureProvider'`
+**Root cause:** `captureProvider` was an instance property on `ScreenCaptureService`, accessed as `ScreenCaptureService.captureProvider` (static-like access on an instance var).
+
+### Changes applied (no large refactor):
+
+#### 5.1 CaptureProviderRegistry
+- New `object CaptureProviderRegistry` — thread-safe holder with `@Volatile` backing field.
+- `set(provider)`, `get()`, `clear()` — stores only `CaptureProvider?`, never `Activity`/`WebView` directly.
+
+#### 5.2 WebViewCaptureProvider
+- Uses `WeakReference(webView)` instead of strong reference — avoids leaks.
+- `capture()` unchanged behavior: `withContext(Dispatchers.Main.immediate)`, width/height check, `Canvas`/`draw`.
+
+#### 5.3 ScreenCaptureService
+- Removed `var captureProvider: CaptureProvider?`.
+- Import changed: `CaptureProvider` → `CaptureProviderRegistry`.
+- `captureScreen()`: now calls `CaptureProviderRegistry.get()`; for `INTERNAL_PROVIDER` source, no fallback to MediaProjection on failure.
+- Added `CaptureSource` enum: `MEDIA_PROJECTION`, `INTERNAL_PROVIDER`.
+- Added `ACTION_START_INTERNAL_CAPTURE` — starts foreground + floating button, sets `isServiceActive=true`, does NOT call `initializeMediaProjection()`.
+- `currentCaptureSource` defaults to `MEDIA_PROJECTION` (existing behavior preserved).
+
+#### 5.4 Health Watcher
+- `runHealthCheck()`: MediaProjection/virtualDisplay/imageReader null checks only run when `currentCaptureSource == MEDIA_PROJECTION`. INTERNAL mode skips these (they are legitimately null).
+
+#### 5.5 MainActivity
+- Removed `ScreenCaptureService.captureProvider = ...` (compile error).
+- Uses `CaptureProviderRegistry.set(WebViewCaptureProvider(wv))` in `WebViewClient.onPageFinished()`.
+- Added `onDestroy()` → `CaptureProviderRegistry.clear()` + `webView.destroy()`.
+
+#### 5.6 WebView Viewport
+- `WebView` is not attached to Compose hierarchy → uses explicit `measure()`/`layout()` with fixed 1080×1920 (density-adjusted) viewport → guarantees non-zero dimensions.
+
+#### 5.7 Asset & Test Relocation
+- `capture_test.html` moved from `src/main/assets/` → `src/debug/assets/` (test harness only).
+- `FakeCaptureProvider` moved from `src/main/` → `src/test/` (test-only).
+- Added `CaptureProviderTest.kt` — verifies `FakeCaptureProvider` returns `Success` with correct dimensions (default and custom).
+
+## 6. Next Steps
+
+- [ ] Run CI to verify compile + tests
 - [ ] Only after CI green: start Phase 3 (Flutter test host)
