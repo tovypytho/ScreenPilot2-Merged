@@ -1,6 +1,6 @@
 # TODO.md — Project Roadmap
 
-## Current: Final Repo Cleanup (Phase 1.6)
+## Current: Git Baseline (Phase 1.7)
 - [x] Backup pre-Phase-1 MergedProject
 - [x] Remove `../../E-Ujian_RE_JADX` Gradle sourceSets
 - [x] Align namespace/applicationId
@@ -19,7 +19,16 @@
 - [x] Audit `.gitignore` final contents (no global `*.properties`; wrapper/gradlew/toml kept)
 - [x] Final static verification (all PASS)
 - [x] Create `FINAL_REPO_CHECK.md`
-- [ ] Push Phase-1 baseline to GitHub (after `git init`)
+- [x] `git init -b main`
+- [x] Verify `.gitignore` via `git check-ignore`
+- [x] Verify required build files are trackable
+- [x] `git add .` (93 files staged)
+- [x] Audit staged files (secrets, local.properties, APK/AAB, build outputs, .gradle, JADX/evidence, generated files — all clean)
+- [x] Commit "chore: establish standalone ScreenPilot baseline" (commit 8aabf1a)
+- [x] Update PROJECT_STATE.md
+- [x] Update TODO.md
+- [x] Create `GIT_BASELINE_REPORT.md`
+- [ ] Push Phase-1 baseline to GitHub (after explicit instruction)
 - [ ] Run GitHub Actions
 - [ ] Fix compile errors if any
 - [ ] Fix unit-test errors if any

@@ -3,7 +3,7 @@
 Last updated: 2026-08-08
 
 ## Current Phase
-**Phase 1.6 (Final repo cleanup) complete. Repo ready for `git init` + first GitHub Actions verification build.**
+**Phase 1.7 (Git baseline) complete. Local Git repository initialized with standalone ScreenPilot baseline committed.**
 
 ## Completed
 - Backup of pre-Phase-1 MergedProject created.
@@ -23,6 +23,12 @@ Last updated: 2026-08-08
 - Phase 1.6: moved `app/src/androidTest/java/com/example/ExampleInstrumentedTest.kt` → `app/src/androidTest/java/id/eujian/cbt/screenpilot/ExampleInstrumentedTest.kt` (package `id.eujian.cbt.screenpilot`). Removed empty legacy `com/example` directories.
 - Phase 1.6: audited `.gitignore` final contents (no global `*.properties`; wrapper properties/gradlew/catalog kept).
 - Phase 1.6: `FINAL_REPO_CHECK.md` created.
+- Phase 1.7: `git init -b main` — local repository initialized.
+- Phase 1.7: verified `.gitignore` rules via `git check-ignore` — build outputs, secrets, local.properties, .gradle/ all correctly ignored; required build files (gradlew, gradle-wrapper.jar/properties, libs.versions.toml, gradle.properties) correctly trackable.
+- Phase 1.7: staged all 93 files with `git add .`.
+- Phase 1.7: audited staged files for secrets, local.properties, APK/AAB, build outputs, .gradle, JADX/evidence, .class files — all clean.
+- Phase 1.7: committed baseline `8aabf1a` — "chore: establish standalone ScreenPilot baseline".
+- Phase 1.7: `GIT_BASELINE_REPORT.md` created.
 
 ## Static Verification
 Passed:
@@ -37,41 +43,11 @@ Passed:
 - no legacy `com/example` package directories anywhere under `app/src`
 - namespace/applicationId = `id.eujian.cbt.screenpilot`
 - memory/report files present; Gradle wrapper files present
+- no secrets or build artifacts in staged files
+- no local.properties, APK/AAB, .gradle, JADX evidence, or generated files staged
 
 ## Remaining Risk
-No actual CI compile/test/build has yet verified the Phase-1 state.
-
-## Do Not Start Yet
-Until GitHub Actions is green:
-- no CaptureProvider
-- no dummy WebView capture implementation
-- no Flutter test host
-- no MethodChannel bridge
-- no GateProvider work
-- no large storage/API refactor
-- no `git init` / push (pending next instruction)
-
-## Next Milestone
-GitHub Actions should:
-1. compile debug Kotlin
-2. run debug unit tests
-3. assemble debug APK
-4. upload APK artifact
-
-Only after this is green should Phase 2 begin.
-
-## Static Verification
-Passed:
-- no `../../` build dependency
-- no production `com.example.*` type references
-- standard sourceSets only
-- local AndroidManifest present
-- required manifest resources present
-- dependency aliases resolve
-- 32 production Kotlin files
-
-## Remaining Risk
-No actual CI compile/test/build has yet verified the Phase-1 state.
+No actual CI compile/test/build has yet verified the Phase-1 state. GitHub Actions must compile, test, and assemble the APK before Phase 2.
 
 ## Do Not Start Yet
 Until GitHub Actions is green:
@@ -83,10 +59,12 @@ Until GitHub Actions is green:
 - no large storage/API refactor
 
 ## Next Milestone
-GitHub Actions should:
-1. compile debug Kotlin
-2. run debug unit tests
-3. assemble debug APK
-4. upload APK artifact
+1. Push Phase-1 baseline to GitHub (after explicit instruction)
+2. Run GitHub Actions
+3. Fix compile errors if any
+4. Fix unit-test errors if any
+5. Confirm `assembleDebug` succeeds
+6. Download/test standalone APK
+7. Mark Phase-1 CI checkpoint GREEN
 
-Only after this is green should Phase 2 begin.
+Only after CI is green should Phase 2 begin.
