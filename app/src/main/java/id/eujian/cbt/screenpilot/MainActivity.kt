@@ -109,6 +109,10 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.dart.DartExecutor
+import id.eujian.cbt.screenpilot.capture.CaptureBridge
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
@@ -157,6 +161,10 @@ class MainActivity : ComponentActivity() {
     private var captureWebView: WebView? = null
     private var internalDebugSessionStarted = false
     private val internalCaptureProviderReady = mutableStateOf(false)
+
+    private companion object {
+        const val FLUTTER_ENGINE_ID = "screenpilot_capture_host"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -307,7 +315,17 @@ class MainActivity : ComponentActivity() {
 
     private fun openFlutterTest() {
         // Phase 3.1: launch the Flutter module (consumed as a prebuilt AAR).
-        startActivity(FlutterActivity.createDefaultIntent(this))
+        // Phase 3.2: the engine is created and cached here so CaptureBridge can
+        // register the MethodChannel before the FlutterActivity attaches to it.
+        if (FlutterEngineCache.getInstance().get(FLUTTER_ENGINE_ID) == null) {
+            val engine = FlutterEngine(this)
+            engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
+            FlutterEngineCache.getInstance().put(FLUTTER_ENGINE_ID, engine)
+            CaptureBridge.setup(engine, this)
+        }
+        startActivity(
+            FlutterActivity.withCachedEngine(FLUTTER_ENGINE_ID).build(this)
+        )
     }
 
     override fun onDestroy() {
@@ -331,6 +349,15 @@ class MainActivity : ComponentActivity() {
         captureWebView?.removeAllViews()
         captureWebView?.destroy()
         captureWebView = null
+        // Only tear the engine down when the task is actually finishing.
+        // On configuration-change recreation the FlutterActivity may still be
+        // attached to the cached engine and must not lose it mid-lifecycle.
+        if (isFinishing) {
+            FlutterEngineCache.getInstance().get(FLUTTER_ENGINE_ID)?.let { engine ->
+                FlutterEngineCache.getInstance().remove(FLUTTER_ENGINE_ID)
+                engine.destroy()
+            }
+        }
         super.onDestroy()
     }
 }
