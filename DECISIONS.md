@@ -10,7 +10,7 @@ Accepted. Decompiled/JADX files are for analysis and do not belong in normal Gra
 Accepted. Use `id.eujian.cbt.screenpilot` for production ScreenPilot code and standalone identity.
 
 ## D004 — GitHub Actions first
-Accepted. Primary build environment is GitHub Actions using JDK 21, Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, compileSdk 35.
+Accepted. Primary build environment is GitHub Actions using JDK 21, Gradle 9.3.1, AGP 9.1.1, Kotlin 2.2.10, compileSdk 36 (targetSdk remains 35).
 
 ## D005 — Mandatory phase checkpoints
 Accepted. Do not start a later phase until the previous phase is reviewed and CI is green.
@@ -34,10 +34,22 @@ Accepted. On Android 10+, successful `INTERNAL_PROVIDER` captures may write an a
 Accepted. The debug WebView is intentionally off-screen and never attached to a ViewRoot, so `View.post` may queue forever. Provider registration after `onPageFinished` must post through `Handler(Looper.getMainLooper())`, re-measure/layout the fixed 1080×1920 viewport, and only then set `CaptureProviderRegistry`. A Compose readiness state gates the debug button (`Debug: Loading Internal Test…` → `Debug: Start Internal Capture`).
 
 ## D007 — Flutter integration starts with a test host
-Planned for Phase 3. Prove Flutter↔Kotlin communication with a small test host before any larger authorized integration.
+Accepted and completed in Phase 3.1. Prove Flutter↔Kotlin communication with a small test host before any larger authorized integration; the AAR-based test host is now the known-green rollback baseline.
 
 ## D008 — Security boundaries remain intact
 Accepted. Do not add production behavior intended to bypass protected content, verification gates, licensing, signature/integrity checks, or related controls.
 
 ## D009 — Flutter–Kotlin bridge via MethodChannel
 Accepted. Phase 3.2 ships a MethodChannel bridge (`id.eujian.cbt.screenpilot/capture`, method `capture`) between the Flutter test host and the Kotlin capture layer. Kotlin (`CaptureBridge.setup`) registers the channel against the cached FlutterEngine in `MainActivity.openFlutterTest()` and answers `capture` by delegating to `CaptureProviderRegistry.get()` — never falling back to MediaProjection — exporting the PNG to `cacheDir` and replying `{ok, path, width, height}`. CI run #19 GREEN and the on-device capture test passed, so the bridge is ready for Phase 4 integration through supported/authorized interfaces only.
+
+## D010 — Canonical E-Ujian evidence is the RAW split set
+Accepted. Phase 4.1 uses the RAW Play/ADB split set as provenance authority: `base.apk` for original Android/DEX/manifest evidence and `split_config.arm64_v8a.apk` for original native ARM64 libraries. AntiSplit is navigation convenience only; RE/MOD/JADX trees are comparison evidence and must not be treated as pristine upstream or copied into production source.
+
+## D011 — Do not package two opaque Flutter application bundles in one APK
+Accepted. ScreenPilot must have one integrated Flutter application/library ownership domain. Multiple `FlutterEngine` instances are allowed only as a pattern within that one integrated Flutter library; they do not solve collisions between independent `flutter_assets`, `libapp.so`, or `libflutter.so`. Two opaque Flutter bundles in one APK are rejected.
+
+## D012 — Phase 4 current path is isolated/project-owned; future in-process path requires authorized source
+Accepted. The current executable Phase 4 path is Option D: an isolated project-owned compatibility/test harness that preserves the Phase-3 Flutter AAR and capture abstraction. A future in-process path may use Option A only with authorized Flutter source/module and only after engine/Dart/AOT/embedding/plugin compatibility is proven. No design depends on licensing/gate/signature spoofing, `FLAG_SECURE` bypass, or server/backend gate circumvention.
+
+## D013 — Native duplicate resolution requires merged-artifact evidence
+Accepted. The exact producer/version of `libc++_shared.so` in the final ScreenPilot APK is unverified at Phase 4.2 design time. Do not add E-Ujian's copy and do not use `pickFirst`, overwrite, or equivalent packaging workarounds until a CI-built merged artifact establishes the shipped producer/version and compatibility with all consumers.

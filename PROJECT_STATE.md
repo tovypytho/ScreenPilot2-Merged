@@ -1,9 +1,9 @@
 # PROJECT_STATE.md — Current Project State
 
-Last updated: 2026-08-09 (Phase 3 COMPLETE)
+Last updated: 2026-08-09 (Phase 4.1 inventory + Phase 4.2 architecture design COMPLETE)
 
 ## Current Phase
-**Phase 1 GREEN. Phase 2 final GREEN (CI run #12 / `d50a817`, runtime smoke verified on device). Phase 3 COMPLETE: 3.1 minimal Flutter test host (AAR integration, CI run #17 `31268201223` GREEN + on-device smoke passed) and 3.2 MethodChannel bridge (commit `f4256a7`, CI run #19 `31292591345` GREEN; on-device test passed — Flutter "Capture via Bridge" returned a PNG path + dimensions). NEXT: Phase 4 (authorized E-Ujian integration study) — do not start until this documentation closeout commit lands.**
+**Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 inventory is COMPLETE/AUDIT PASS (`PHASE4_EUJIAN_INVENTORY.md`), and Phase 4.2 architecture design is COMPLETE (`PHASE4_INTEGRATION_DESIGN.md`) with no production-source changes. Current executable path = Option D, an isolated project-owned compatibility/test harness. Future authorized in-process path = Option A, a single authorized Flutter source/module, only after the compatibility gate passes. NEXT: Phase 4.2A compatibility proof (design/evidence only; no opaque bundle mixing and no security/integrity bypass).**
 
 ## Environment / Toolchain Facts (IMPORTANT — machine-specific)
 - **Flutter SDK**: stable `3.44.9` cloned at `C:\flutter` (git clone --depth 1 -b stable). Not on PATH — call `C:\flutter\bin\flutter.bat`. First run auto-downloaded Dart SDK.
@@ -48,19 +48,39 @@ Goal: Flutter requests a capture through Kotlin and receives the PNG path of the
 - CI run #19 (`31292591345`, commit `f4256a7`) GREEN: Flutter AAR build → compileDebugKotlin → unit tests → assembleDebug → lint.
 - On-device test PASSED (user-verified): fresh app → "Open Flutter Test" → "Capture via Bridge" → PNG path + dimensions returned and image displayed.
 
+### Phase 4.1 — E-Ujian Inventory & Compatibility Gate (COMPLETE, AUDIT PASS)
+- Canonical provenance is the RAW Play/ADB split set; `base.apk` is the Android/DEX/manifest reference and `split_config.arm64_v8a.apk` is the native reference. `E-Ujian_RE_JADX` is not pristine and remains comparison evidence only.
+- Flutter bundle inventory: 13 files / 1,391,277 bytes. Native inventory: 8 ARM64 libraries / 22,954,080 bytes. RAW and RE/MOD native libraries are byte-identical in the audited set.
+- No APK, DEX, `.so`, JADX/smali tree, or RE Flutter assets were copied into ScreenPilot.
+- Full evidence and no-copy constraints are recorded in `PHASE4_EUJIAN_INVENTORY.md`.
+
+### Phase 4.2 — Authorized Flutter Integration Architecture Design (COMPLETE, DESIGN ONLY)
+- Option A: replace the Phase-3 test host with ONE authorized Flutter source/module — conditional future in-process path after compatibility proof.
+- Option B: multiple `FlutterEngine` instances using ONE integrated Flutter library — supported pattern, but not a solution for two independent Flutter bundles.
+- Option C: two independent/opaque Flutter bundles in one APK — REJECTED because of `flutter_assets` / `libapp.so` / `libflutter.so` ownership collisions and unproven AOT/engine compatibility.
+- Option D: isolated project-owned compatibility/test harness — CURRENT executable/recommended path.
+- `CaptureProvider`, `CaptureProviderRegistry`, and `CaptureBridge` remain unchanged; capture is limited to project-owned/authorized WebViews registered explicitly in-process.
+- Exact producer/version of the final APK's `libc++_shared.so` remains UNVERIFIED at design time; no `pickFirst`/overwrite workaround is allowed before merged-artifact evidence exists.
+- Security/integrity controls remain a hard boundary: no licensing/gate spoofing, package/certificate spoofing, `FLAG_SECURE` bypass, or server/backend gate circumvention is part of the design.
+
 ## Remaining Risk
 - AAR flow depends on CI regenerating `.android/` + Flutter toolchain each run; local dev cannot build the Flutter module (no Android SDK on this machine).
 - `releaseImplementation` artifact (`flutter_release:1.0`) is declared but never built/resolved by CI (only debug AAR is produced) — revisit if release builds are needed.
-- Bridge reply contract (`{ok,path,width,height}`) is currently a simple debug surface; Phase 4 will decide the authorized production-facing channel contract.
+- Bridge reply contract (`{ok,path,width,height}`) is currently a simple debug surface; any production-facing expansion must stay behind the authorized/project-owned capture boundary.
+- E-Ujian's opaque `libapp.so` / Flutter engine provenance and Dart AOT compatibility with ScreenPilot Flutter 3.44.9 are unproven.
+- The exact producer/version of `libc++_shared.so` in a final merged ScreenPilot APK has not yet been established from a CI-built artifact.
 
-## Next Milestone (Phase 4 — authorized E-Ujian integration study)
-1. Re-read D008 (security boundaries) and the E-Ujian JADX reference material before writing any integration code.
-2. Integrate only through supported/authorized interfaces; keep protected/security-controlled surfaces untouched.
-3. Keep the build reproducible and documented; update `PROJECT_STATE.md`/`DECISIONS.md` at checkpoints.
+## Next Milestone (Phase 4.2A — compatibility proof, evidence only)
+1. Establish, if possible from authorized evidence, the target Flutter engine/Dart SDK/AOT provenance and Android embedding generation.
+2. Inventory target plugin/MethodChannel/EventChannel/PlatformView contracts only to the extent needed for compatibility planning; do not use this work to bypass licensing, gate, signature, `FLAG_SECURE`, or exam/security policy.
+3. Do not mix foreign `flutter_assets`, `libapp.so`, `libflutter.so`, or native libraries into ScreenPilot during this proof.
+4. If compatibility cannot be proven, record a NO-GO for in-process opaque-bundle integration and keep Option D as the executable path.
+5. If a CI-built artifact becomes available for inspection, establish the exact producer/version of the shipped `libc++_shared.so` before any second native producer is considered.
 
-## Untracked / not committed (by design)
-- `CHATGPT_REVIEW.diff`, `PHASE2_RUNTIME_FIX_HANDOFF.md` — working artifacts, never staged.
-- Everything under `flutter_test_host/.android/`, `flutter_test_host/build/`, `.dart_tool/`, `local.properties` — generated/machine-specific.
+## Documentation / working-artifact policy
+- `PHASE4_EUJIAN_INVENTORY.md` and `PHASE4_INTEGRATION_DESIGN.md` are documentation checkpoint files and should be tracked.
+- `CHATGPT_REVIEW.diff`, `PHASE2_RUNTIME_FIX_HANDOFF.md` remain local working artifacts and should not be staged unless explicitly requested.
+- Everything under `flutter_test_host/.android/`, `flutter_test_host/build/`, `.dart_tool/`, `local.properties` remains generated/machine-specific.
 
 ## Static Verification (phase 1 baseline, still passing)
 - no `../../` build dep; no production `com.example.*`; standard sourceSets; local manifest present; dependency aliases resolve; no JADX/legacy dirs in `app/src`; no secrets/build artifacts staged.

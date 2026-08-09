@@ -1,4 +1,4 @@
-## Current: Phase 3 COMPLETE — next: Phase 4 (authorized E-Ujian integration study)
+## Current: Phase 4.2 architecture design COMPLETE — next: Phase 4.2A compatibility proof
 
 ### Phase 1 / baseline
 - [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
@@ -63,8 +63,34 @@
 ## Phase 3 — Final Status
 **GREEN / COMPLETE** — 3.1 minimal Flutter test host (AAR integration, run #17 `31268201223`) and 3.2 MethodChannel bridge (run #19 `31292591345`, commit `f4256a7`) both CI GREEN; on-device smoke (3.1) and MethodChannel capture test (3.2) both passed. Phase closed with documentation commit.
 
-## Phase 4 — Authorized Integration Study
-- [ ] Evaluate original/authorized source boundaries
-- [ ] Keep protected/security-controlled surfaces protected
-- [ ] Integrate only through supported/authorized interfaces
-- [ ] Keep build reproducible and documented
+## Phase 4.1 — E-Ujian Inventory & Compatibility Gate
+- [x] Identify canonical RAW Play/ADB split evidence and reject modified RE trees as pristine baseline
+- [x] Inventory package/version/SDK/Application/MainActivity metadata
+- [x] Inventory 13 Flutter assets and 8 ARM64 native libraries with hashes/ELF metadata
+- [x] Record ABI matrix, DT_NEEDED relationships, manifest/security components, and Phase-3 collision risks
+- [x] Write `PHASE4_EUJIAN_INVENTORY.md`
+- [x] Independent OpenCode audit: PASS, no corrections required
+- [x] Confirm production source unchanged and no proprietary payload copied into `MergedProject`
+
+## Phase 4.2 — Authorized Flutter Integration Architecture Design
+- [x] Write `PHASE4_INTEGRATION_DESIGN.md` (design only)
+- [x] Normalize architecture options:
+  - [x] A = one authorized Flutter source/module (conditional future in-process path)
+  - [x] B = multiple engines within one integrated Flutter library (supported pattern, not a bundle-collision solution)
+  - [x] C = two independent/opaque Flutter bundles in one APK (REJECTED)
+  - [x] D = isolated project-owned compatibility/test harness (CURRENT executable path)
+- [x] Preserve ScreenPilot as sole Android application/launcher owner
+- [x] Keep `CaptureProvider`, registry, and `CaptureBridge` unchanged
+- [x] Define explicit project-owned WebView registration architecture
+- [x] Record `libc++_shared.so` final producer as UNVERIFIED until merged-artifact evidence exists
+- [x] Keep licensing/gate/signature/`FLAG_SECURE`/server-security bypass outside project scope
+- [x] Confirm documentation-only diff; production paths unchanged
+
+## Phase 4.2A — Compatibility Proof (NEXT; evidence only)
+- [ ] Determine target Flutter engine commit / Flutter release / Dart SDK provenance from authorized evidence, if possible
+- [ ] Determine Dart AOT snapshot / `libapp.so` compatibility with the candidate engine; do not assume compatibility
+- [ ] Confirm Android Flutter embedding generation/version
+- [ ] Inventory target plugin registration, MethodChannel/EventChannel names, and PlatformView contracts for compatibility planning
+- [ ] When a CI-built ScreenPilot artifact is available, identify the exact producer/version of final `libc++_shared.so`
+- [ ] Record GO / NO-GO for any future authorized in-process integration
+- [ ] STOP if provenance/compatibility remains unprovable; retain Option D as executable path
