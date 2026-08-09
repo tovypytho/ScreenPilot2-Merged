@@ -38,3 +38,6 @@ Planned for Phase 3. Prove Flutter↔Kotlin communication with a small test host
 
 ## D008 — Security boundaries remain intact
 Accepted. Do not add production behavior intended to bypass protected content, verification gates, licensing, signature/integrity checks, or related controls.
+
+## D009 — Flutter–Kotlin bridge via MethodChannel
+Accepted. Phase 3.2 ships a MethodChannel bridge (`id.eujian.cbt.screenpilot/capture`, method `capture`) between the Flutter test host and the Kotlin capture layer. Kotlin (`CaptureBridge.setup`) registers the channel against the cached FlutterEngine in `MainActivity.openFlutterTest()` and answers `capture` by delegating to `CaptureProviderRegistry.get()` — never falling back to MediaProjection — exporting the PNG to `cacheDir` and replying `{ok, path, width, height}`. CI run #19 GREEN and the on-device capture test passed, so the bridge is ready for Phase 4 integration through supported/authorized interfaces only.
