@@ -1,4 +1,4 @@
-## Current: Phase 4.2 architecture design COMPLETE — next: Phase 4.2A compatibility proof
+## Current: Phase 4.2A compatibility proof COMPLETE (NO-GO opaque bundle mixing) — next: Phase 4.2B ownership checkpoint
 
 ### Phase 1 / baseline
 - [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
@@ -88,11 +88,18 @@
 - [x] Documentation closeout commit `9f0ce3c` passed CI run #21 (`31304311490`)
 - [x] Track `PHASE4_EUJIAN_INVENTORY.md` and `PHASE4_INTEGRATION_DESIGN.md` in Git (follow-up fix; they were inadvertently omitted from `9f0ce3c`)
 
-## Phase 4.2A — Compatibility Proof (NEXT; evidence only)
-- [ ] Determine target Flutter engine commit / Flutter release / Dart SDK provenance from authorized evidence, if possible
-- [ ] Determine Dart AOT snapshot / `libapp.so` compatibility with the candidate engine; do not assume compatibility
-- [ ] Confirm Android Flutter embedding generation/version
-- [ ] Inventory target plugin registration, MethodChannel/EventChannel names, and PlatformView contracts for compatibility planning
-- [ ] When a CI-built ScreenPilot artifact is available, identify the exact producer/version of final `libc++_shared.so`
-- [ ] Record GO / NO-GO for any future authorized in-process integration
-- [ ] STOP if provenance/compatibility remains unprovable; retain Option D as executable path
+## Phase 4.2A — Compatibility Proof (COMPLETE; evidence only)
+- [x] Determine target Flutter engine / Flutter release / Dart SDK generation from evidence: embedded revision `13e658725ddaa270601426d1485636157e38c34c` correlates with Flutter 3.38.3 / Dart 3.10.1 generation
+- [x] Determine Dart AOT / `libapp.so` compatibility result: NO-GO with ScreenPilot Flutter 3.44.9; do not mix engine/AOT artifacts across these release generations
+- [x] Confirm Android Flutter embedding generation/version: v2 (`flutterEmbedding=2`, `FlutterActivity`)
+- [x] Inventory target plugin registration, representative MethodChannel/EventChannel names, and WebView PlatformView contract for compatibility planning
+- [x] Evaluate final `libc++_shared.so` producer requirement: still UNVERIFIED because APK bytes were not in the evidence set; deferred until before any future second native producer
+- [x] Record NO-GO for opaque in-process integration; retain Option D as executable path
+- [x] Write `PHASE4_2A_COMPATIBILITY_PROOF.md`
+
+## Phase 4.2B — Flutter Ownership Checkpoint (NEXT; decision only)
+- [ ] Record ownership result: keep the current ScreenPilot Flutter AAR/test-host as the single Flutter application ownership domain
+- [ ] Keep Option D executable; keep Option A conditional on authorized source/module + one pinned toolchain
+- [ ] Do not introduce target `flutter_assets`, `libapp.so`, `libflutter.so`, DEX, or native libraries
+- [ ] Preserve deferred `libc++_shared.so` producer gate before any future second native producer
+- [ ] Update `DECISIONS.md`/`PROJECT_STATE.md` only if the ownership checkpoint adds a new durable decision

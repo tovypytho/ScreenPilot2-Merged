@@ -53,3 +53,9 @@ Accepted. The current executable Phase 4 path is Option D: an isolated project-o
 
 ## D013 — Native duplicate resolution requires merged-artifact evidence
 Accepted. The exact producer/version of `libc++_shared.so` in the final ScreenPilot APK is unverified at Phase 4.2 design time. Do not add E-Ujian's copy and do not use `pickFirst`, overwrite, or equivalent packaging workarounds until a CI-built merged artifact establishes the shipped producer/version and compatibility with all consumers.
+
+## D014 — Opaque target Flutter bundle is incompatible with the current ScreenPilot engine ownership
+Accepted. Phase 4.2A evidence identifies the target runtime as the Flutter 3.38.3 / Dart 3.10.1 generation (embedded engine revision evidence `13e658725ddaa270601426d1485636157e38c34c`, Android embedding v2), while ScreenPilot's known-green AAR flow uses Flutter 3.44.9. The target precompiled `libapp.so`/`flutter_assets` must not be paired with ScreenPilot's engine and the target opaque `libflutter.so` must not replace the ScreenPilot engine. Opaque in-process bundle integration is therefore NO-GO. Option D remains executable; Option A remains the only future authorized in-process path and requires authorized source/module rebuilt under one pinned toolchain.
+
+## D015 — Plugin/channel inventory does not transfer View ownership
+Accepted. Phase 4.2A confirms eight target Android plugins and identifies `plugins.flutter.io/webview` as the explicit WebView PlatformView factory id in the original plugin registration path. Knowledge of plugin/channel names does not grant ScreenPilot ownership of a target WebView. CaptureProvider registration remains limited to a WebView explicitly created/owned by project-authorized integration code in the same process.
