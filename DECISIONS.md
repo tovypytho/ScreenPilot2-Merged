@@ -59,3 +59,9 @@ Accepted. Phase 4.2A evidence identifies the target runtime as the Flutter 3.38.
 
 ## D015 — Plugin/channel inventory does not transfer View ownership
 Accepted. Phase 4.2A confirms eight target Android plugins and identifies `plugins.flutter.io/webview` as the explicit WebView PlatformView factory id in the original plugin registration path. Knowledge of plugin/channel names does not grant ScreenPilot ownership of a target WebView. CaptureProvider registration remains limited to a WebView explicitly created/owned by project-authorized integration code in the same process.
+
+## D016 — Retain ScreenPilot as the single Flutter application ownership domain
+Accepted. Phase 4.2B closes the ownership checkpoint with no production implementation change. ScreenPilot keeps `flutter_test_host` as its single integrated Flutter application/library, built by the known-green Flutter 3.44.9 AAR flow and launched through the cached `screenpilot_capture_host` engine. Target opaque `flutter_assets`, `libapp.so`, `libflutter.so`, DEX/JADX/smali, and native libraries remain outside production packaging. Option D remains the executable path. Option A is a future ownership migration only if authorized source/module becomes available and is rebuilt under one pinned toolchain; it is not a two-bundle coexistence plan.
+
+## D017 — A second project-owned WebView requires owner-aware provider lifecycle semantics
+Accepted as a design prerequisite for Phase 4.3. The current `CaptureProviderRegistry` exposes only global `set/get/clear` operations and does not identify which surface owns the active registration. Before a second project-owned WebView/PlatformView is introduced, the lifecycle design must prevent disposal of an older surface from clearing a newer provider registration. Phase 4.3A will define the ownership/registration contract first; no registry refactor is performed by the Phase 4.2B checkpoint.

@@ -1,4 +1,4 @@
-## Current: Phase 4.2A compatibility proof COMPLETE (NO-GO opaque bundle mixing) — next: Phase 4.2B ownership checkpoint
+## Current: Phase 4.2B Flutter ownership checkpoint COMPLETE — next: Phase 4.3A project-owned WebView provider lifecycle design
 
 ### Phase 1 / baseline
 - [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
@@ -97,9 +97,18 @@
 - [x] Record NO-GO for opaque in-process integration; retain Option D as executable path
 - [x] Write `PHASE4_2A_COMPATIBILITY_PROOF.md`
 
-## Phase 4.2B — Flutter Ownership Checkpoint (NEXT; decision only)
-- [ ] Record ownership result: keep the current ScreenPilot Flutter AAR/test-host as the single Flutter application ownership domain
-- [ ] Keep Option D executable; keep Option A conditional on authorized source/module + one pinned toolchain
-- [ ] Do not introduce target `flutter_assets`, `libapp.so`, `libflutter.so`, DEX, or native libraries
-- [ ] Preserve deferred `libc++_shared.so` producer gate before any future second native producer
-- [ ] Update `DECISIONS.md`/`PROJECT_STATE.md` only if the ownership checkpoint adds a new durable decision
+## Phase 4.2B — Flutter Ownership Checkpoint (COMPLETE; decision only)
+- [x] Record ownership result: keep the current ScreenPilot Flutter AAR/test-host as the single Flutter application ownership domain
+- [x] Keep Option D executable; keep Option A conditional on authorized source/module + one pinned toolchain
+- [x] Do not introduce target `flutter_assets`, `libapp.so`, `libflutter.so`, DEX, or native libraries
+- [x] Preserve deferred `libc++_shared.so` producer gate before any future second native producer
+- [x] Record provider-lifecycle risk: the current global registry has no owner identity, so stale-dispose protection must be designed before a second project-owned WebView surface
+- [x] Write `PHASE4_2B_FLUTTER_OWNERSHIP.md`
+
+## Phase 4.3A — Project-owned WebView Provider Lifecycle Design (NEXT; design only)
+- [ ] Define provider registration ownership/token/handle semantics without changing production code yet
+- [ ] Define replacement and stale-dispose behavior for two sequential project-owned WebView surfaces
+- [ ] Define Activity teardown and Flutter reopen lifecycle requirements
+- [ ] Preserve the existing internal off-screen WebView debug provider and `CaptureBridge` contract
+- [ ] Define unit/runtime gates for a future project-owned Flutter PlatformView/WebView prototype
+- [ ] Keep target opaque Flutter/native/DEX artifacts and security-control bypasses outside scope

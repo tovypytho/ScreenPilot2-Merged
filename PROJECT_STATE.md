@@ -1,9 +1,9 @@
 # PROJECT_STATE.md — Current Project State
 
-Last updated: 2026-08-11 (Phase 4.2A compatibility proof COMPLETE — opaque in-process integration NO-GO)
+Last updated: 2026-08-11 (Phase 4.2B Flutter ownership checkpoint COMPLETE — ScreenPilot ownership retained)
 
 ## Current Phase
-**Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 inventory COMPLETE/AUDIT PASS, Phase 4.2 architecture design COMPLETE, and Phase 4.2A compatibility proof COMPLETE (`PHASE4_2A_COMPATIBILITY_PROOF.md`). Evidence identifies the target Flutter runtime as the Flutter 3.38.3 / Dart 3.10.1 generation with Android embedding v2, while ScreenPilot remains on Flutter 3.44.9. Result: opaque in-process bundle integration is NO-GO; do not mix target `flutter_assets`/`libapp.so`/`libflutter.so` with ScreenPilot. Current executable path remains Option D. Future authorized in-process path remains Option A only with authorized source/module rebuilt under one pinned toolchain. NEXT: Phase 4.2B ownership checkpoint — retain the current single Flutter AAR/test-host ownership unless authorized source becomes available.**
+**Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 inventory COMPLETE/AUDIT PASS, Phase 4.2 architecture design COMPLETE, Phase 4.2A compatibility proof COMPLETE/NO-GO for opaque bundle mixing, and Phase 4.2B Flutter ownership checkpoint COMPLETE (`PHASE4_2B_FLUTTER_OWNERSHIP.md`). ScreenPilot retains the single integrated Flutter ownership domain (`flutter_test_host` AAR, Flutter 3.44.9, cached engine `screenpilot_capture_host`). Target opaque `flutter_assets`/`libapp.so`/`libflutter.so`/DEX/native libraries remain excluded. Current executable path remains Option D; Option A remains conditional on authorized source/module rebuilt under one pinned toolchain. NEXT: Phase 4.3A project-owned WebView provider lifecycle design — design only, no target integration.**
 
 ## Environment / Toolchain Facts (IMPORTANT — machine-specific)
 - **Flutter SDK**: stable `3.44.9` cloned at `C:\flutter` (git clone --depth 1 -b stable). Not on PATH — call `C:\flutter\bin\flutter.bat`. First run auto-downloaded Dart SDK.
@@ -72,20 +72,30 @@ Goal: Flutter requests a capture through Kotlin and receives the PNG path of the
 - Original GeneratedPluginRegistrant registers 8 Android plugins; custom host channel names and the WebView PlatformView id `plugins.flutter.io/webview` are inventoried for compatibility planning only.
 - Exact producer/version of ScreenPilot's final packaged `libc++_shared.so` remains UNVERIFIED because APK artifact bytes were not part of the local evidence set. This is deferred and does not block the NO-GO because no target native producer is being added.
 - Full evidence and decision: `PHASE4_2A_COMPATIBILITY_PROOF.md`.
+- CI run #23 (`31459422945`, commit `395909c`) validated the Phase 4.2A checkpoint: compile, 163 unit tests (0 failures/errors/skips), assembleDebug, and lint all GREEN.
+
+
+### Phase 4.2B — Flutter Ownership Checkpoint (COMPLETE, DECISION ONLY)
+- ScreenPilot remains the single Android application/launcher owner and the single integrated Flutter application/library ownership domain.
+- `flutter_test_host` remains the owned Flutter module; current Flutter toolchain stays 3.44.9 and the cached engine id remains `screenpilot_capture_host`.
+- Target opaque `flutter_assets`, `libapp.so`, `libflutter.so`, DEX/JADX/smali, and native `.so` files remain read-only evidence and are not packaged.
+- Option D remains the current executable path. Option A remains a conditional future ownership migration only if authorized source/module becomes available and is rebuilt under one pinned toolchain.
+- The current `CaptureProviderRegistry` API has no registration-owner identity; before adding a second project-owned WebView surface, Phase 4.3A must design lifecycle/ownership semantics so a stale dispose cannot clear a newer provider.
+- Full ownership decision: `PHASE4_2B_FLUTTER_OWNERSHIP.md`.
 
 ## Remaining Risk
 - AAR flow depends on CI regenerating `.android/` + Flutter toolchain each run; local dev cannot build the Flutter module (no Android SDK on this machine).
-- `releaseImplementation` artifact (`flutter_release:1.0`) is declared but never built/resolved by CI (only debug AAR is produced) — revisit if release builds are needed.
+- CI currently invokes `flutter build aar --debug`, and Flutter 3.44.9 still assembles Debug, Profile, and Release AAR artifacts; the Android host consumes debug/release only because it has no profile build type. Release APK behavior itself remains outside the current debug-only runtime verification scope.
 - Bridge reply contract (`{ok,path,width,height}`) is currently a simple debug surface; any production-facing expansion must stay behind the authorized/project-owned capture boundary.
 - Opaque target engine/AOT compatibility with ScreenPilot is now resolved negatively: target evidence maps to Flutter 3.38.3 / Dart 3.10.1 generation, while ScreenPilot uses Flutter 3.44.9; do not mix these artifacts.
 - The exact producer/version of `libc++_shared.so` in a final merged ScreenPilot APK has not yet been established from a CI-built artifact.
 
-## Next Milestone (Phase 4.2B — Flutter ownership checkpoint, design/decision only)
-1. Record the Phase 4.2A NO-GO as the ownership gate result: keep ScreenPilot's current single Flutter AAR/test-host ownership.
-2. Do not replace the test host or add target binaries while authorized target Flutter source/module is unavailable.
-3. Keep Option D as the executable path. Option A remains conditional on authorized source rebuilt with one pinned toolchain.
-4. Keep exact final `libc++_shared.so` producer attribution as a deferred prerequisite before any future second native producer is considered.
-5. No production implementation is justified by Phase 4.2B unless a new authorized source artifact changes the compatibility evidence.
+## Next Milestone (Phase 4.3A — Project-owned WebView provider lifecycle design, DESIGN ONLY)
+1. Define an owner-aware registration/lifecycle contract for project-owned capture providers before introducing a second WebView surface.
+2. Preserve the existing internal off-screen WebView debug provider and Phase-3 `CaptureBridge` behavior.
+3. Specify registration/replacement/disposal rules, including stale-dispose protection and Activity/Flutter-engine teardown behavior.
+4. Define static/unit/runtime gates for a future project-owned Flutter PlatformView/WebView prototype.
+5. Do not copy or integrate target opaque assets, AOT/engine binaries, DEX, or native libraries; Phase 4.3A is design-only.
 
 ## Documentation / working-artifact policy
 - `PHASE4_EUJIAN_INVENTORY.md` and `PHASE4_INTEGRATION_DESIGN.md` are documentation checkpoint files and should be tracked.
