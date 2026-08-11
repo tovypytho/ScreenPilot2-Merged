@@ -62,6 +62,7 @@ Goal: Flutter requests a capture through Kotlin and receives the PNG path of the
 - `CaptureProvider`, `CaptureProviderRegistry`, and `CaptureBridge` remain unchanged; capture is limited to project-owned/authorized WebViews registered explicitly in-process.
 - Exact producer/version of the final APK's `libc++_shared.so` remains UNVERIFIED at design time; no `pickFirst`/overwrite workaround is allowed before merged-artifact evidence exists.
 - Security/integrity controls remain a hard boundary: no licensing/gate spoofing, package/certificate spoofing, `FLAG_SECURE` bypass, or server/backend gate circumvention is part of the design.
+- Documentation closeout commit `9f0ce3c` passed CI run #21 (`31304311490`): compile, unit tests, assembleDebug, and lint all GREEN. The two Phase-4 checkpoint documents were inadvertently left untracked by that commit; this follow-up tracks them without changing production code.
 
 ## Remaining Risk
 - AAR flow depends on CI regenerating `.android/` + Flutter toolchain each run; local dev cannot build the Flutter module (no Android SDK on this machine).

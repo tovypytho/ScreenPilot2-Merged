@@ -85,6 +85,8 @@
 - [x] Record `libc++_shared.so` final producer as UNVERIFIED until merged-artifact evidence exists
 - [x] Keep licensing/gate/signature/`FLAG_SECURE`/server-security bypass outside project scope
 - [x] Confirm documentation-only diff; production paths unchanged
+- [x] Documentation closeout commit `9f0ce3c` passed CI run #21 (`31304311490`)
+- [x] Track `PHASE4_EUJIAN_INVENTORY.md` and `PHASE4_INTEGRATION_DESIGN.md` in Git (follow-up fix; they were inadvertently omitted from `9f0ce3c`)
 
 ## Phase 4.2A — Compatibility Proof (NEXT; evidence only)
 - [ ] Determine target Flutter engine commit / Flutter release / Dart SDK provenance from authorized evidence, if possible
