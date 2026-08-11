@@ -1,9 +1,9 @@
 # PROJECT_STATE.md — Current Project State
 
-Last updated: 2026-08-11 (Phase 4.3A provider lifecycle design COMPLETE — owner-scoped registration selected)
+Last updated: 2026-08-11 (Phase 4.3B owner-aware registry IMPLEMENTED — CI/device validation pending)
 
 ## Current Phase
-**Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 inventory COMPLETE/AUDIT PASS; Phase 4.2 architecture, 4.2A compatibility NO-GO, and 4.2B Flutter ownership checkpoints COMPLETE; Phase 4.3A project-owned provider lifecycle design is now COMPLETE (`PHASE4_3A_PROVIDER_LIFECYCLE_DESIGN.md`). ScreenPilot retains the single integrated Flutter ownership domain (`flutter_test_host` AAR, Flutter 3.44.9, cached engine `screenpilot_capture_host`). Target opaque Flutter/native/DEX artifacts remain excluded. The next code slice is Phase 4.3B: owner-scoped `CaptureProvider` registration handles + stale-dispose-safe registry semantics, preserving all existing capture/bridge behavior.**
+**Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 through Phase 4.3A checkpoints are COMPLETE. Phase 4.3B owner-aware registry implementation is now prepared in source (`PHASE4_3B_IMPLEMENTATION.md`) and awaits GitHub Actions + device regression validation. `CaptureProviderRegistry` now uses owner-scoped registration handles with newest-live selection/restoration; `MainActivity` closes only its own internal-WebView registration. `CaptureBridge`, `ScreenCaptureService`, `WebViewCaptureProvider`, Flutter AAR/toolchain ownership, and no-fallback capture semantics remain unchanged. Target opaque Flutter/native/DEX artifacts remain excluded.**
 
 ## Environment / Toolchain Facts (IMPORTANT — machine-specific)
 - **Flutter SDK**: stable `3.44.9` cloned at `C:\flutter` (git clone --depth 1 -b stable). Not on PATH — call `C:\flutter\bin\flutter.bat`. First run auto-downloaded Dart SDK.
@@ -93,6 +93,16 @@ Goal: Flutter requests a capture through Kotlin and receives the PNG path of the
 - MainActivity migration order for 4.3B: register-new-before-close-old on re-registration; close own handle before destroying its WebView; remove owner use of process-global `clear()`.
 - Full design and unit/runtime gate matrix: `PHASE4_3A_PROVIDER_LIFECYCLE_DESIGN.md`.
 
+
+### Phase 4.3B — Owner-aware Registry Implementation (IMPLEMENTED, VALIDATION PENDING)
+- `CaptureProviderRegistry` now exposes owner lifecycle through `register(provider) -> CaptureProviderRegistration`; global owner `set/clear` mutation is removed.
+- Selection is newest-live registration. Closing a stale handle cannot clear a newer provider; closing the current handle restores the previous live provider.
+- `MainActivity` stores its internal-WebView registration handle, registers-new-before-close-old, and closes its own handle before WebView destruction.
+- `CaptureBridge` and `ScreenCaptureService` remain unchanged `get()` consumers.
+- Added 9 focused registry lifecycle tests; expected aggregate CI test count is 172 if the prior 163-test inventory is otherwise unchanged.
+- CI run #25 (`31465987873`, commit `7415067`) validated the preceding Phase 4.3A design checkpoint: compile, 163/163 tests, assembleDebug, and lint GREEN.
+- Full implementation/validation checklist: `PHASE4_3B_IMPLEMENTATION.md`.
+
 ## Remaining Risk
 - AAR flow depends on CI regenerating `.android/` + Flutter toolchain each run; local dev cannot build the Flutter module (no Android SDK on this machine).
 - CI currently invokes `flutter build aar --debug`, and Flutter 3.44.9 still assembles Debug, Profile, and Release AAR artifacts; the Android host consumes debug/release only because it has no profile build type. Release APK behavior itself remains outside the current debug-only runtime verification scope.
@@ -100,13 +110,12 @@ Goal: Flutter requests a capture through Kotlin and receives the PNG path of the
 - Opaque target engine/AOT compatibility with ScreenPilot is now resolved negatively: target evidence maps to Flutter 3.38.3 / Dart 3.10.1 generation, while ScreenPilot uses Flutter 3.44.9; do not mix these artifacts.
 - The exact producer/version of `libc++_shared.so` in a final merged ScreenPilot APK has not yet been established from a CI-built artifact.
 
-## Next Milestone (Phase 4.3B — Owner-aware registry implementation)
-1. Replace owner-facing global `set/clear` lifecycle mutation with `register(provider) -> CaptureProviderRegistration`.
-2. Implement newest-live registration selection, idempotent handle close, stale-dispose protection, and previous-live-provider restoration.
-3. Migrate only `MainActivity` ownership: store its registration handle, register-new-before-close-old, and close its own handle before WebView destruction.
-4. Keep `CaptureBridge`, `ScreenCaptureService`, `CaptureProvider`, `WebViewCaptureProvider`, Flutter AAR/toolchain ownership, and capture-source semantics unchanged unless a compile/test failure proves a minimal adjustment is required.
-5. Add focused registry lifecycle unit tests, then rely on GitHub Actions for compile/test/assemble/lint.
-6. After CI GREEN, rerun the existing project-owned Phase-2 internal-WebView smoke and Phase-3 Flutter bridge smoke before considering 4.3B complete.
+## Next Milestone (Phase 4.3B validation)
+1. Apply/review only the Phase 4.3B registry/MainActivity/test/docs patch.
+2. Run static checks only (`git diff --check`, mutation-usage grep); do not run a local Android Gradle build.
+3. Push and require GitHub Actions compile/test/assemble/lint GREEN. Expected unit-test count: 172 if no unrelated test inventory changes.
+4. After CI GREEN, repeat the existing project-owned internal-WebView smoke test and Flutter `Capture via Bridge` smoke, including Flutter reopen.
+5. Mark Phase 4.3B COMPLETE only after both CI and device regression gates pass.
 
 ## Documentation / working-artifact policy
 - `PHASE4_EUJIAN_INVENTORY.md` and `PHASE4_INTEGRATION_DESIGN.md` are documentation checkpoint files and should be tracked.

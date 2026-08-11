@@ -1,4 +1,4 @@
-## Current: Phase 4.3A provider lifecycle design COMPLETE — next: Phase 4.3B owner-aware registry implementation
+## Current: Phase 4.3B owner-aware registry IMPLEMENTED — CI/device validation pending
 
 ### Phase 1 / baseline
 - [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
@@ -116,13 +116,14 @@
 - [x] Keep target opaque Flutter/native/DEX artifacts and security-control bypasses outside scope
 - [x] Write `PHASE4_3A_PROVIDER_LIFECYCLE_DESIGN.md`
 
-## Phase 4.3B — Owner-aware Registry Implementation (NEXT)
-- [ ] Implement `CaptureProviderRegistration` and owner-aware registry storage
-- [ ] Implement newest-live selection, idempotent close, stale-dispose safety, and provider restoration
-- [ ] Migrate MainActivity from global `set/clear` ownership to a stored registration handle
-- [ ] Keep `CaptureBridge` and `ScreenCaptureService` contracts unchanged
-- [ ] Add registry lifecycle unit tests from the 4.3A matrix
-- [ ] Run `git diff --check` and static review; do not run local Android Gradle build
-- [ ] Push and require GitHub Actions compile/test/assemble/lint GREEN
+## Phase 4.3B — Owner-aware Registry Implementation (IMPLEMENTED; validation pending)
+- [x] Implement `CaptureProviderRegistration` and owner-aware registry storage
+- [x] Implement newest-live selection, idempotent close, stale-dispose safety, and provider restoration
+- [x] Migrate MainActivity from global `set/clear` ownership to a stored registration handle
+- [x] Keep `CaptureBridge` and `ScreenCaptureService` contracts unchanged
+- [x] Add 9 focused registry lifecycle unit tests from the 4.3A matrix
+- [x] Write `PHASE4_3B_IMPLEMENTATION.md`
+- [x] Run `git diff --check` and static review; do not run local Android Gradle build
+- [ ] Push and require GitHub Actions compile/test/assemble/lint GREEN (expected 172 unit tests if inventory otherwise unchanged)
 - [ ] Device regression: internal project-owned WebView capture still passes
 - [ ] Device regression: Flutter `Capture via Bridge` still passes, including reopen

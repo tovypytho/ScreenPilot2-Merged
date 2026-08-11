@@ -113,6 +113,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.dart.DartExecutor
 import id.eujian.cbt.screenpilot.capture.CaptureBridge
+import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistration
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
@@ -159,6 +160,7 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
 
     private var captureWebView: WebView? = null
+    private var internalCaptureRegistration: CaptureProviderRegistration? = null
     private var internalDebugSessionStarted = false
     private val internalCaptureProviderReady = mutableStateOf(false)
 
@@ -207,7 +209,12 @@ class MainActivity : ComponentActivity() {
                                 wv.layout(0, 0, vpWidth, vpHeight)
 
                                 if (wv.width > 0 && wv.height > 0) {
-                                    CaptureProviderRegistry.set(WebViewCaptureProvider(wv))
+                                    val newRegistration = CaptureProviderRegistry.register(
+                                        WebViewCaptureProvider(wv)
+                                    )
+                                    val previousRegistration = internalCaptureRegistration
+                                    internalCaptureRegistration = newRegistration
+                                    previousRegistration?.close()
                                     internalCaptureProviderReady.value = true
                                 }
                             }
@@ -343,7 +350,8 @@ class MainActivity : ComponentActivity() {
         }
 
         internalCaptureProviderReady.value = false
-        CaptureProviderRegistry.clear()
+        internalCaptureRegistration?.close()
+        internalCaptureRegistration = null
         captureWebView?.stopLoading()
         captureWebView?.loadUrl("about:blank")
         captureWebView?.removeAllViews()
