@@ -115,6 +115,7 @@ import io.flutter.embedding.engine.dart.DartExecutor
 import id.eujian.cbt.screenpilot.capture.CaptureBridge
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistration
 import id.eujian.cbt.screenpilot.capture.CaptureProviderRegistry
+import id.eujian.cbt.screenpilot.flutter.ScreenPilotPlatformViewPlugin
 import id.eujian.cbt.screenpilot.data.AppDatabase
 import id.eujian.cbt.screenpilot.data.HistoryEntry
 import id.eujian.cbt.screenpilot.data.HistoryQuestionType
@@ -329,6 +330,7 @@ class MainActivity : ComponentActivity() {
             engine.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault())
             FlutterEngineCache.getInstance().put(FLUTTER_ENGINE_ID, engine)
             CaptureBridge.setup(engine, this)
+            engine.getPlugins().add(ScreenPilotPlatformViewPlugin())
         }
         startActivity(
             FlutterActivity.withCachedEngine(FLUTTER_ENGINE_ID).build(this)

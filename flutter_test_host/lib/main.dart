@@ -37,6 +37,7 @@ class _CaptureHostPageState extends State<CaptureHostPage> {
   String _status = 'Idle';
   String _dimensions = '';
   bool _busy = false;
+  bool _showWebViewSurface = false;
 
   Future<void> _capture() async {
     setState(() {
@@ -74,42 +75,82 @@ class _CaptureHostPageState extends State<CaptureHostPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _status,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            if (_busy)
-              const CircularProgressIndicator()
-            else
-              FilledButton.icon(
-                onPressed: _capture,
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('Capture via Bridge'),
-              ),
-            if (hasImage) ...[
-              const SizedBox(height: 16),
-              Image.file(
-                File(_imagePath),
-                width: 320,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Text(
-                  'Failed to load image: $error',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Dimensions: $_dimensions',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ],
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _showWebViewSurface
+                ? Container(
+                    color: Colors.white,
+                    child: const AndroidView(
+                      viewType: 'screenpilot_webview',
+                    ),
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _status,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        if (_busy)
+                          const CircularProgressIndicator()
+                        else
+                          FilledButton.icon(
+                            onPressed: () =>
+                                setState(() => _showWebViewSurface = true),
+                            icon: const Icon(Icons.web),
+                            label: const Text('Show WebView Surface'),
+                          ),
+                        if (hasImage) ...[
+                          const SizedBox(height: 16),
+                          Image.file(
+                            File(_imagePath),
+                            width: 320,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Text(
+                              'Failed to load image: $error',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Dimensions: $_dimensions',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: _showWebViewSurface
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            setState(() => _showWebViewSurface = false),
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Back'),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton.icon(
+                        onPressed: _capture,
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Capture via Bridge'),
+                      ),
+                    ],
+                  )
+                : FilledButton.icon(
+                    onPressed: _capture,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Capture via Bridge'),
+                  ),
+          ),
+        ],
       ),
     );
   }
