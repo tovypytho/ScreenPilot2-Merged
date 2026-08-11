@@ -19,7 +19,7 @@ Before changing code, read `PROJECT_STATE.md`, `DECISIONS.md`, `TODO.md`, and th
 - Gradle 9.3.1.
 - AGP 9.1.1.
 - Kotlin 2.2.10.
-- compileSdk 35, targetSdk 35, minSdk 28.
+- compileSdk 36, targetSdk 35, minSdk 28.
 - Avoid local Android builds unless explicitly requested.
 
 ## Workflow
@@ -36,4 +36,4 @@ Before changing code, read `PROJECT_STATE.md`, `DECISIONS.md`, `TODO.md`, and th
 - Test fakes/mocks must stay test-only and must not reproduce spoofed production identities.
 
 ## Current Checkpoint
-Phase 1 GREEN. Phase 2 final GREEN (CI #12 / `d50a817`, runtime smoke verified). Phase 3.1 minimal Flutter test host is CI GREEN via AAR integration (`fe57637`, CI run #17 `31268201223`): host consumes `flutter_test_host` as a prebuilt AAR from `flutter build aar --debug` (local Maven repo + `download.flutter.io`), Flutter Gradle plugin is NOT used (conflicts with AGP 9.1.1), `.android/` is gitignored/untracked, `compileSdk=36`/`targetSdk=35`. NEXT: on-device smoke test — fresh app, tap debug button "Open Flutter Test", Flutter screen must open without crash. Only after that: Phase 3.2 (MethodChannel bridge). See PROJECT_STATE.md for full detail.
+Phase 1 GREEN. Phase 2 final GREEN. Phase 3 COMPLETE and runtime-verified. Phase 4.1 inventory, Phase 4.2 architecture, Phase 4.2A compatibility proof, Phase 4.2B Flutter ownership, and Phase 4.3A provider lifecycle design are COMPLETE. Current Flutter ownership remains the `flutter_test_host` AAR on Flutter 3.44.9 with cached engine `screenpilot_capture_host`; opaque target Flutter/native/DEX artifacts are not production inputs. NEXT: Phase 4.3B owner-aware `CaptureProviderRegistry` implementation using owner-scoped registration handles and stale-dispose-safe newest-live selection. Preserve the security boundary and existing no-fallback capture semantics. See `PROJECT_STATE.md`, `PHASE4_2B_FLUTTER_OWNERSHIP.md`, and `PHASE4_3A_PROVIDER_LIFECYCLE_DESIGN.md`.

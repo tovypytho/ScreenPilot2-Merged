@@ -1,4 +1,4 @@
-## Current: Phase 4.2B Flutter ownership checkpoint COMPLETE — next: Phase 4.3A project-owned WebView provider lifecycle design
+## Current: Phase 4.3A provider lifecycle design COMPLETE — next: Phase 4.3B owner-aware registry implementation
 
 ### Phase 1 / baseline
 - [x] Standalone cleanup, namespace migration, Git baseline, GitHub push
@@ -105,10 +105,24 @@
 - [x] Record provider-lifecycle risk: the current global registry has no owner identity, so stale-dispose protection must be designed before a second project-owned WebView surface
 - [x] Write `PHASE4_2B_FLUTTER_OWNERSHIP.md`
 
-## Phase 4.3A — Project-owned WebView Provider Lifecycle Design (NEXT; design only)
-- [ ] Define provider registration ownership/token/handle semantics without changing production code yet
-- [ ] Define replacement and stale-dispose behavior for two sequential project-owned WebView surfaces
-- [ ] Define Activity teardown and Flutter reopen lifecycle requirements
-- [ ] Preserve the existing internal off-screen WebView debug provider and `CaptureBridge` contract
-- [ ] Define unit/runtime gates for a future project-owned Flutter PlatformView/WebView prototype
-- [ ] Keep target opaque Flutter/native/DEX artifacts and security-control bypasses outside scope
+## Phase 4.3A — Project-owned WebView Provider Lifecycle Design (COMPLETE; design only)
+- [x] Define owner-scoped `register(provider) -> CaptureProviderRegistration` semantics
+- [x] Choose newest-live registration selection with previous-live-provider restoration
+- [x] Define stale-dispose guarantee: closing an old handle never clears a newer provider
+- [x] Define MainActivity order: register-new-before-close-old; close handle before WebView destroy
+- [x] Define Flutter reopen / temporary project-owned PlatformView lifecycle behavior
+- [x] Preserve `CaptureBridge` and `ScreenCaptureService` read-only `get()` semantics
+- [x] Define focused registry unit tests + Phase-2/Phase-3 runtime regression gates
+- [x] Keep target opaque Flutter/native/DEX artifacts and security-control bypasses outside scope
+- [x] Write `PHASE4_3A_PROVIDER_LIFECYCLE_DESIGN.md`
+
+## Phase 4.3B — Owner-aware Registry Implementation (NEXT)
+- [ ] Implement `CaptureProviderRegistration` and owner-aware registry storage
+- [ ] Implement newest-live selection, idempotent close, stale-dispose safety, and provider restoration
+- [ ] Migrate MainActivity from global `set/clear` ownership to a stored registration handle
+- [ ] Keep `CaptureBridge` and `ScreenCaptureService` contracts unchanged
+- [ ] Add registry lifecycle unit tests from the 4.3A matrix
+- [ ] Run `git diff --check` and static review; do not run local Android Gradle build
+- [ ] Push and require GitHub Actions compile/test/assemble/lint GREEN
+- [ ] Device regression: internal project-owned WebView capture still passes
+- [ ] Device regression: Flutter `Capture via Bridge` still passes, including reopen

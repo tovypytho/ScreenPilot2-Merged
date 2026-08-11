@@ -65,3 +65,9 @@ Accepted. Phase 4.2B closes the ownership checkpoint with no production implemen
 
 ## D017 — A second project-owned WebView requires owner-aware provider lifecycle semantics
 Accepted as a design prerequisite for Phase 4.3. The current `CaptureProviderRegistry` exposes only global `set/get/clear` operations and does not identify which surface owns the active registration. Before a second project-owned WebView/PlatformView is introduced, the lifecycle design must prevent disposal of an older surface from clearing a newer provider registration. Phase 4.3A will define the ownership/registration contract first; no registry refactor is performed by the Phase 4.2B checkpoint.
+
+## D018 — CaptureProvider ownership uses registration handles, not global owner clear
+Accepted for Phase 4.3. A project-owned capture surface registers through `register(provider)` and receives an opaque `CaptureProviderRegistration` handle. Surface teardown closes only that handle. Normal owners must not perform a process-global registry `clear()`. The handle close operation is idempotent and identifies the exact registration being disposed.
+
+## D019 — CaptureProvider selection uses newest-live registration with restoration
+Accepted for Phase 4.3. The registry keeps ordered live registrations. `get()` returns the newest live provider. Closing a stale/non-current registration does not affect the current provider. Closing the current registration restores the previous still-live provider; if none remains, `get()` returns `null`. Registry locking protects metadata only and must never encompass `provider.capture()`. This supports a temporary project-owned Flutter PlatformView without allowing its lifecycle to corrupt the existing internal debug provider.
