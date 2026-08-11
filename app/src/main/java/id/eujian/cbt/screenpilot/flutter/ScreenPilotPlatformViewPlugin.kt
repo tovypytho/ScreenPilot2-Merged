@@ -7,7 +7,7 @@ class ScreenPilotPlatformViewPlugin : FlutterPlugin {
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         val context = binding.applicationContext
         val engine = binding.flutterEngine
-        binding.platformViewsController.registry.registerViewFactory(
+        binding.platformViewRegistry.registerViewFactory(
             "screenpilot_webview",
             ScreenPilotWebViewFactory(context, engine)
         )
